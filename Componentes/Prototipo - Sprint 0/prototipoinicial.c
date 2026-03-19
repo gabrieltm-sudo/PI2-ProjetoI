@@ -6,6 +6,7 @@
 #include <string.h>
 
 FILE* arquivo;
+int contaLinhas(char *arq);
 void lerArquivo(char *arq);
 
 typedef struct{
@@ -16,14 +17,37 @@ code memoria[12];
 
 int main(){
     char arq[20];
-
+    
     printf("Digite o nome do arquivo de memória: ");
     fgets(arq, sizeof(arq), stdin);
     arq[strcspn(arq, "\n")] = '\0';
+    
+    int linhas = contaLinhas(arq);
+    printf("Número de linhas do arquivo: %d\n", linhas);
 
     lerArquivo(arq);
 
     return 0;
+}
+
+int contaLinhas(char *arq){
+    arquivo = fopen(arq, "r");
+    char ch;
+    int count=0;
+
+    if(arquivo==NULL){
+        printf("Acesso negado!\n");
+        return 0;
+    }
+    while((ch=fgetc(arquivo))!=EOF){
+        if(ch=='\n'){
+            count++;
+        }
+    }
+    
+    fclose(arquivo);
+    
+    return count;
 }
 
 void lerArquivo(char *arq){
