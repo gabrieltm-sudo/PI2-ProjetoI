@@ -1,6 +1,5 @@
 // Atualmente lê o que está escrito em memoria1.mem e imprime na tela.
 // Lê os bits como char.
-// Deve implementar a decodificação para os campos opcode, rs, rt e rd (de acordo com o tipo de instrução pego).
 
 #include <stdio.h>
 #include <string.h>
@@ -8,9 +7,10 @@
 
 FILE* arquivo;
 
-typedef struct{
+typedef struct mem{
     char mem[17];
 } code;
+
 
 int contaLinhas(char *arq);
 void lerArquivo(char *arq, code **memoria, int linhas);
@@ -26,7 +26,6 @@ int main(){
 
     code *memoria = NULL;
     lerArquivo(arq, &memoria, linhas);
-
     free(memoria);
     return 0;
 }
