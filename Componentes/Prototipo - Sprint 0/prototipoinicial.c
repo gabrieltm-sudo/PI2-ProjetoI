@@ -1,5 +1,5 @@
 // Decodificação em andamento (Gabriel);
-
+// Editar parâmetros dos protótipos conforme criação da função
 
 #include <stdio.h>
 #include <string.h>
@@ -44,32 +44,100 @@ opcode: 4 bits;
 End: 8 bits;
 */
 
-
 int contaLinhas(char *arq);
 void lerArquivo(char *arq, instrucao **memoria, int linhas);
 void programCounter(instrucao *memoria, int linhas, int esc);
 void decodificaInst(instrucao *instrucao);
 
+//************ Editar parâmetros conforme criação da função **************
+void imprimeBancoRegistradores();
+void imprimeSimulador();
+void salvaASM();
+void salvaDAT();
+void executaPrograma();
+void executaInstrucao();
+void voltaInstrucao();
+
+// Componentes
+int buscaInstrucao();
+void decodificaInstrucao();
+void executaInstrucaoR();
+void executaInstrucaoI();
+void executaInstrucaoJ();
+void ULA();
+void atualizaPC();
+
 int main(){
 
     int esc;
+    int opcao;
 
-    char arq[20];
-    printf("Digite o nome do arquivo de memória: ");
-    fgets(arq, sizeof(arq), stdin);
-    arq[strcspn(arq, "\n")] = '\0';
+    while (1) {
+        printf("\nMenu:\n\n");
+        printf("1. Carregar Memória de Instruções (.mem)\n");
+        printf("2. Carregar Memória de Dados (.dat)\n");
+        printf("3. Imprimir Banco de Registradores\n");
+        printf("4. Imprimir todo o Simulador\n");
+        printf("5. Salvar .asm\n");
+        printf("6. Salvar .dat\n");
+        printf("7. Executa programa (run)\n");
+        printf("8. Executa uma instrução (step)\n");
+        printf("9. Volta uma instrução (back)\n");
+        printf("0. Sair\n\n");
+        printf("Digite uma opção: ");
+        scanf("%d", &opcao);
+        getchar();
 
-    int linhas = contaLinhas(arq);
-    printf("Número de linhas do arquivo: %d\n", linhas);
+        switch (opcao) {
+            case 1:
+                //Carregar Mem de Instr.
+                char arq[20];
+                printf("Digite o nome do arquivo de memória: ");
+                fgets(arq, sizeof(arq), stdin);
+                arq[strcspn(arq, "\n")] = '\0';
 
-    instrucao *memoria = NULL;
-    lerArquivo(arq, &memoria, linhas);
+                int linhas = contaLinhas(arq);
+                printf("Número de linhas do arquivo: %d\n", linhas);
 
-    printf("\n\n0 - Rodar automaticamente\n1 - Rodar passo a passo\n");
-    scanf("%d", &esc);
-    getchar();
+                instrucao *memoria = NULL;
+                lerArquivo(arq, &memoria, linhas);
+                break;
+            case 2:
+                //Carregar Mem de Dados
+                break;
+            case 3:
+                //Imprimir Banco de Registradores
+                break;
 
-    programCounter(memoria, linhas, esc);
+            case 4:
+                //Imprimir simulador
+                break;
+            case 5:
+                // Salvar .asm
+                break;
+            case 6:
+                // Salvar .dat
+                break;
+            case 7:
+                //Executar programa (run)
+                esc = 0;
+                programCounter(memoria, linhas, esc);
+                break;
+            case 8:
+                //Executa instrução (step)
+                esc = 1;
+                programCounter(memoria, linhas, esc);
+                break;
+            case 9:
+                //Voltar instrução (back)
+                break;
+            case 0:
+                //Sair
+                return 0;
+            default:
+                printf("Opção inválida!\n");
+        }
+    }
     return 0;
 }
 
