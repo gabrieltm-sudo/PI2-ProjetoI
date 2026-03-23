@@ -215,6 +215,7 @@ void decodificaInst(instrucao *instrucao){
         printf("rs: %d\n", (*instrucao).rs);
         printf("rt: %d\n", (*instrucao).rt);
         printf("rd: %d\n", (*instrucao).rd);
+        printf("funct: %d\n", (*instrucao).funct);
         break;
     case 2:
         (*instrucao).tipoInst = (enum inst)tipoJ;
