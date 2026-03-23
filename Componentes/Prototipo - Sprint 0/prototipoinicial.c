@@ -48,7 +48,9 @@ int contaLinhas(char *arq);
 void programCounter(instrucao *memoria, int linhas, int esc);
 
 //************ Editar parâmetros conforme criação da função **************
-void imprimeBancoRegistradores();
+int *inicializaBReg();
+void gerenciarBReg(int *reg);
+void imprimeBancoRegistradores(int *reg);
 void imprimeSimulador();
 void salvaASM();
 void salvaDAT();
@@ -71,6 +73,8 @@ int main(){
     int esc;
     int opcao;
 
+    int *bReg = inicializaBReg();
+
     while (1) {
         printf("\nMenu:\n\n");
         printf("1. Carregar Memória de Instruções (.mem)\n");
@@ -91,12 +95,12 @@ int main(){
             case 1:
                 //Carregar Mem de Instr.
                 char arq[20];
-                printf("Digite o nome do arquivo de memória: ");
+                printf("\nDigite o nome do arquivo de memória: ");
                 fgets(arq, sizeof(arq), stdin);
                 arq[strcspn(arq, "\n")] = '\0';
 
                 int linhas = contaLinhas(arq);
-                printf("Número de linhas do arquivo: %d\n", linhas);
+                printf("\nNúmero de linhas do arquivo: %d\n", linhas);
 
                 instrucao *memoria = NULL;
                 lerMem(arq, &memoria, linhas);
@@ -106,6 +110,7 @@ int main(){
                 break;
             case 3:
                 //Imprimir Banco de Registradores
+                imprimeBancoRegistradores(bReg);
                 break;
 
             case 4:
@@ -135,7 +140,7 @@ int main(){
                 free(memoria);
                 return 0;
             default:
-                printf("Opção inválida!\n");
+                printf("\nOpção inválida!\n");
         }
     }
     return 0;
@@ -146,7 +151,7 @@ int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é r
     char ch;
     int count=0;
     if(arquivo==NULL){
-        printf("Acesso negado!\n");
+        printf("\nAcesso negado!\n");
         return 0;
     }
     while((ch=fgetc(arquivo))!=EOF){
@@ -165,9 +170,10 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
     char mem[17];
     
     if(arquivo==NULL){
-        printf("Permissão negada!");
+        printf("\nPermissão negada!");
         return;
     }
+    printf("\nMemória de Instruções\n\n");
     while(i < linhas && fscanf(arquivo, "%16s", mem) != EOF){
         
         strcpy((*memoria)[i].mem, mem);
@@ -233,7 +239,35 @@ void decodificaInst(instrucao *instrucao){
         printf("rt: %d\n", (*instrucao).rt);
         printf("imediato: %d\n", (*instrucao).imm);
     }
+}
 
+int *inicializaBReg(){
+    int *reg=NULL;
 
+    reg = (int*)malloc(8*sizeof(int));
 
+    for(int i=0;i<8;i++){
+        reg[i]=0;
+    }
+
+    return reg;
+}
+
+void gerenciarBReg(int *reg){
+    int altReg, tempReg;
+
+    printf("Qual registrador deseja alterar? (0-7)");
+    scanf("%d", &altReg);
+
+    printf("Qual o novo valor? ");
+    scanf("%d", &tempReg);
+
+    reg[altReg] = tempReg;
+}
+
+void imprimeBancoRegistradores(int *reg){
+    printf("\nBanco de Registradores\n\n");
+    for(int i=0;i<8;i++){
+        printf("Registrador %d: %d\n",i, reg[i]);
+    }
 }
