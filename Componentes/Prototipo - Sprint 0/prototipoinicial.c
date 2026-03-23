@@ -16,11 +16,11 @@ typedef struct {
     char mem[17];
     enum inst tipoInst;
     uint16_t instrucao;
-    uint16_t opcode;
-    uint16_t rs;
-    uint16_t rt;
-    uint16_t rd;
-    uint16_t funct;
+    uint8_t opcode;
+    uint8_t rs;
+    uint8_t rt;
+    uint8_t rd;
+    uint8_t funct;
     int16_t imm;
     uint16_t addr;
 } instrucao;
@@ -45,9 +45,7 @@ End: 8 bits;
 */
 
 int contaLinhas(char *arq);
-void lerArquivo(char *arq, instrucao **memoria, int linhas);
 void programCounter(instrucao *memoria, int linhas, int esc);
-void decodificaInst(instrucao *instrucao);
 
 //************ Editar parâmetros conforme criação da função **************
 void imprimeBancoRegistradores();
@@ -59,8 +57,9 @@ void executaInstrucao();
 void voltaInstrucao();
 
 // Componentes
+void lerMem(char *arq, instrucao **memoria, int linhas);
 int buscaInstrucao();
-void decodificaInstrucao();
+void decodificaInst(instrucao *instrucao);
 void executaInstrucaoR();
 void executaInstrucaoI();
 void executaInstrucaoJ();
@@ -100,7 +99,7 @@ int main(){
                 printf("Número de linhas do arquivo: %d\n", linhas);
 
                 instrucao *memoria = NULL;
-                lerArquivo(arq, &memoria, linhas);
+                lerMem(arq, &memoria, linhas);
                 break;
             case 2:
                 //Carregar Mem de Dados
@@ -133,6 +132,7 @@ int main(){
                 break;
             case 0:
                 //Sair
+                free(memoria);
                 return 0;
             default:
                 printf("Opção inválida!\n");
@@ -158,7 +158,7 @@ int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é r
     return count;
 }
 
-void lerArquivo(char *arq, instrucao **memoria, int linhas){
+void lerMem(char *arq, instrucao **memoria, int linhas){
     *memoria = (instrucao *)malloc(256 * sizeof(instrucao));
     arquivo = fopen(arq, "r");
     int i=0;
@@ -185,6 +185,7 @@ void programCounter(instrucao *memoria, int linhas, int esc){
     int pc = 0;
 
     while(pc < linhas){
+
         printf("\nPC = %d | Memória = %s\n", pc, memoria[pc].mem);
         decodificaInst(&memoria[pc]);
 
@@ -198,9 +199,39 @@ void programCounter(instrucao *memoria, int linhas, int esc){
 
 void decodificaInst(instrucao *instrucao){
 
-    (*instrucao).opcode = (*instrucao).instrucao >> 12;
+    printf("Instrução: [ %d ]\n", (*instrucao).instrucao);
+    (*instrucao).opcode = (*instrucao).instrucao >> 12; // Pega os 4 bits do opcode
 
     printf("opcode: %d\n", (*instrucao).opcode);
+
+    switch((*instrucao).opcode){
+    case 0:
+        (*instrucao).tipoInst = (enum inst)tipoR;
+        (*instrucao).rs = ((*instrucao).instrucao >> 9) & 0x7; // pega os 3 bits do rs (desloca 6 bits para a direita e pega os 3 mais significativos que ficaram)
+        (*instrucao).rt = ((*instrucao).instrucao >> 6) & 0x7; // pega os 3 bits do rt
+        (*instrucao).rd = ((*instrucao).instrucao >> 3) & 0x7; // pega os 3 bits do rd
+        (*instrucao).funct = ((*instrucao).instrucao) & 0x7;
+        printf("[ Tipo R ] \n");
+        printf("rs: %d\n", (*instrucao).rs);
+        printf("rt: %d\n", (*instrucao).rt);
+        printf("rd: %d\n", (*instrucao).rd);
+        break;
+    case 2:
+        (*instrucao).tipoInst = (enum inst)tipoJ;
+        (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
+        printf("[ Tipo J ]\n");
+        printf("adress: %d\n", (*instrucao).addr);
+        break;
+    default:
+        (*instrucao).tipoInst = (enum inst)tipoI;
+        (*instrucao).rs = ((*instrucao).instrucao >> 9) &0x7; // pega os 3 bits do rs
+        (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
+        (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
+        printf("[ Tipo I ] \n");
+        printf("rs: %d\n", (*instrucao).rs);
+        printf("rt: %d\n", (*instrucao).rt);
+        printf("imediato: %d\n", (*instrucao).imm);
+    }
 
 
 
