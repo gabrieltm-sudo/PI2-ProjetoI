@@ -1,5 +1,4 @@
-// Decodificação em andamento (Gabriel);
-// Editar parâmetros dos protótipos conforme criação da função
+// Deve liberar reg
 
 #include <stdio.h>
 #include <string.h>
@@ -7,6 +6,21 @@
 #include <stdint.h>
 
 FILE* arquivo;
+
+// struct de sinais
+typedef struct{
+    uint8_t branch;
+    uint8_t jump;
+    uint8_t IncPC;
+    uint8_t RegDst;
+    uint8_t UlaFonte;
+    uint8_t MemParaReg;
+    uint8_t EscReg;
+    uint8_t EscMem;
+    uint8_t ulaOp;
+}sinaisUC;
+
+sinaisUC sinais;
 
 enum inst{
     tipoI, tipoJ, tipoR
@@ -45,7 +59,6 @@ End: 8 bits;
 */
 
 int contaLinhas(char *arq);
-void programCounter(instrucao *memoria, int linhas, int esc);
 
 //************ Editar parâmetros conforme criação da função **************
 int *inicializaBReg();
@@ -60,8 +73,10 @@ void voltaInstrucao();
 
 // Componentes
 void lerMem(char *arq, instrucao **memoria, int linhas);
+void programCounter(instrucao *memoria, int linhas, int esc);
 int buscaInstrucao();
-void decodificaInst(instrucao *instrucao);
+void decodificaInst(instrucao *instrucao); // OK
+void unidadeControle(instrucao *instrucao, sinaisUC *sinais);
 void executaInstrucaoR();
 void executaInstrucaoI();
 void executaInstrucaoJ();
@@ -163,6 +178,7 @@ int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é r
     return count;
 }
 
+// Leitura da memória
 void lerMem(char *arq, instrucao **memoria, int linhas){
     *memoria = (instrucao *)malloc(256 * sizeof(instrucao));
     arquivo = fopen(arq, "r");
@@ -186,14 +202,16 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
     fclose(arquivo);
 }
 
+// PC
 void programCounter(instrucao *memoria, int linhas, int esc){
 
     int pc = 0;
 
-    while(pc < linhas){
+    while(pc < linhas){ // Clock
 
         printf("\nPC = %d | Memória = %s\n", pc, memoria[pc].mem);
         decodificaInst(&memoria[pc]);
+        unidadeControle(&memoria[pc], &sinais);
 
         if(esc == 1){
             printf("Pressione enter para o próximo passo\n\n");
@@ -203,6 +221,7 @@ void programCounter(instrucao *memoria, int linhas, int esc){
     }
 }
 
+// Decodificação
 void decodificaInst(instrucao *instrucao){
 
     printf("Instrução: [ %d ]\n", (*instrucao).instrucao);
@@ -212,7 +231,7 @@ void decodificaInst(instrucao *instrucao){
 
     switch((*instrucao).opcode){
     case 0:
-        (*instrucao).tipoInst = (enum inst)tipoR;
+        (*instrucao).tipoInst = tipoR;
         (*instrucao).rs = ((*instrucao).instrucao >> 9) & 0x7; // pega os 3 bits do rs (desloca 6 bits para a direita e pega os 3 mais significativos que ficaram)
         (*instrucao).rt = ((*instrucao).instrucao >> 6) & 0x7; // pega os 3 bits do rt
         (*instrucao).rd = ((*instrucao).instrucao >> 3) & 0x7; // pega os 3 bits do rd
@@ -224,13 +243,13 @@ void decodificaInst(instrucao *instrucao){
         printf("funct: %d\n", (*instrucao).funct);
         break;
     case 2:
-        (*instrucao).tipoInst = (enum inst)tipoJ;
+        (*instrucao).tipoInst = tipoJ;
         (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
         printf("[ Tipo J ]\n");
         printf("adress: %d\n", (*instrucao).addr);
         break;
     default:
-        (*instrucao).tipoInst = (enum inst)tipoI;
+        (*instrucao).tipoInst = tipoI;
         (*instrucao).rs = ((*instrucao).instrucao >> 9) &0x7; // pega os 3 bits do rs
         (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
         (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
@@ -239,6 +258,25 @@ void decodificaInst(instrucao *instrucao){
         printf("rt: %d\n", (*instrucao).rt);
         printf("imediato: %d\n", (*instrucao).imm);
     }
+}
+
+//UC
+void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
+    // Testar
+    switch((*instrucao).opcode){
+        case 0: // opcode = 0000
+            (*sinais).RegDst = 1;
+            (*sinais).EscReg = 1;
+            (*sinais).RegDst = 1;
+            (*sinais).UlaFonte = 0;
+            (*sinais).ulaOp = (*instrucao).funct;
+            (*sinais).EscMem = 0;
+            (*sinais).MemParaReg = 1;
+
+
+            break;
+    }
+
 }
 
 int *inicializaBReg(){
@@ -253,6 +291,7 @@ int *inicializaBReg(){
     return reg;
 }
 
+// gerenciar BREG (?)
 void gerenciarBReg(int *reg){
     int altReg, tempReg;
 
@@ -265,6 +304,7 @@ void gerenciarBReg(int *reg){
     reg[altReg] = tempReg;
 }
 
+// ?
 void imprimeBancoRegistradores(int *reg){
     printf("\nBanco de Registradores\n\n");
     for(int i=0;i<8;i++){
