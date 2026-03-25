@@ -267,13 +267,73 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
         case 0: // opcode = 0000
             (*sinais).RegDst = 1;
             (*sinais).EscReg = 1;
-            (*sinais).RegDst = 1;
             (*sinais).UlaFonte = 0;
             (*sinais).ulaOp = (*instrucao).funct;
             (*sinais).EscMem = 0;
             (*sinais).MemParaReg = 1;
+            (*sinais).jump = 0;
+            (*sinais).branch = 0;
 
+            if((*sinais).ulaOp==0){
+                printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                // chama ULA e o que mais for necessário.
+            }
+            else if((*sinais).ulaOp==2){
+                printf("Sub $%d, $%d, $%d", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                // chama ULA e o que mais for necessário.
+            }
+            break;
+        case 2:
+            (*sinais).jump = 1;
+            printf("\nlógica jump\n");
+            break;
+        case 4: // opcode = 0100 - Addi
+            (*sinais).RegDst = 0;
+            (*sinais).EscReg = 1;
+            (*sinais).UlaFonte = 1;
+            (*sinais).ulaOp = 1;
+            (*sinais).EscMem = 0;
+            (*sinais).MemParaReg = 1;
+            (*sinais).jump = 0;
+            (*sinais).branch = 0;
 
+            printf("\nAddi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            break;
+        case 8: // opcode = 0100 - BEQ
+            (*sinais).RegDst = 0;
+            (*sinais).EscReg = 0;
+            (*sinais).UlaFonte = 0;
+            (*sinais).ulaOp = 6; // 110 (?) - verificar
+            (*sinais).EscMem = 0;
+            (*sinais).MemParaReg = 0;
+            (*sinais).jump = 0;
+            (*sinais).branch = 1; // verificar também
+
+            printf("\nbeq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            break;
+        case 11: // opcode = 1011 - lw
+            (*sinais).RegDst = 0;
+            (*sinais).EscReg = 1;
+            (*sinais).UlaFonte = 1;
+            (*sinais).ulaOp = 3;
+            (*sinais).EscMem = 0;
+            (*sinais).MemParaReg = 1;
+            (*sinais).jump = 0;
+            (*sinais).branch = 0;
+            
+            printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rs, (*instrucao).imm);
+            break;
+        case 15: // opcode = 1111 - sw
+            (*sinais).RegDst = 0;
+            (*sinais).EscReg = 0;
+            (*sinais).UlaFonte = 1;
+            (*sinais).ulaOp = 5; // (?)
+            (*sinais).EscMem = 1;
+            (*sinais).MemParaReg = 0;
+            (*sinais).jump = 0;
+            (*sinais).branch = 0;
+
+            printf("\nsw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
             break;
     }
 
