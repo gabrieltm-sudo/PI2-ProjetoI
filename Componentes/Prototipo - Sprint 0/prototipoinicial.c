@@ -299,7 +299,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 
             printf("\nAddi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
             break;
-        case 8: // opcode = 0100 - BEQ
+        case 8: // opcode = 1000 - BEQ
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 0;
             (*sinais).UlaFonte = 0;
