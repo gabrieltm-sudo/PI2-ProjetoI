@@ -74,7 +74,6 @@ void lerMem(char *arq, instrucao **memoria, int linhas);
 
 // PROGRAM COUNTER (PC) / BUSCA
 void programCounter(instrucao *memoria, int linhas, int esc, int *bReg);
-int buscaInstrucao();     // (não implementado - busca já ocorre via PC)
 
 
 // DECODIFICAÇÃO
