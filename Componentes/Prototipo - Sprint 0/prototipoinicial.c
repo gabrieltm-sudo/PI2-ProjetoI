@@ -268,10 +268,8 @@ void programCounter(instrucao *memoria, int linhas, int esc, int *bReg){
 // Decodificação
 void decodificaInst(instrucao *instrucao){
 
-    printf("Instrução: [ %d ]\n", (*instrucao).instrucao);
     (*instrucao).opcode = (*instrucao).instrucao >> 12; // Pega os 4 bits do opcode
 
-    printf("opcode: %d\n", (*instrucao).opcode);
 
     switch((*instrucao).opcode){
     case 0:
@@ -281,6 +279,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).rd = ((*instrucao).instrucao >> 3) & 0x7; // pega os 3 bits do rd
         (*instrucao).funct = ((*instrucao).instrucao) & 0x7;
         printf("[ Tipo R ] \n");
+        printf("opcode: %d\n", (*instrucao).opcode);
         printf("rs: %d\n", (*instrucao).rs);
         printf("rt: %d\n", (*instrucao).rt);
         printf("rd: %d\n", (*instrucao).rd);
