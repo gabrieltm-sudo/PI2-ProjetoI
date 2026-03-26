@@ -291,7 +291,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).tipoInst = tipoJ;
         (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
         printf("[ Tipo J ]\n");
-        printf("adress: %d\n", (*instrucao).addr);
+        printf("address: %d\n", (*instrucao).addr);
         break;
 
     default:
@@ -322,17 +322,22 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 
             if((*sinais).ulaOp==0){
                 printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                // chama ULA e o que mais for necessário.
             }
             else if((*sinais).ulaOp==2){
                 printf("Sub $%d, $%d, $%d", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                // chama ULA e o que mais for necessário.
+            }
+            else if((*sinais).ulaOp==4){
+                printf("\nAND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+
+            }
+            else if((*sinais).ulaOp==5){
+                printf("\nOR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             break;
 
         case 2:
             (*sinais).jump = 1;
-            printf("\nlógica jump\n");
+            printf("\nJ %d\n", (*instrucao).imm);
             break;
 
         case 4: // opcode = 0100 - Addi
@@ -352,11 +357,11 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 0;
             (*sinais).UlaFonte = 0;
-            (*sinais).ulaOp = 6; // 110 (?) - verificar
+            (*sinais).ulaOp = 6; // 110
             (*sinais).EscMem = 0;
             (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
-            (*sinais).branch = 1; // verificar também
+            (*sinais).branch = 1;
 
             printf("\nbeq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
@@ -372,7 +377,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
             
-            printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rs, (*instrucao).imm);
+            printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
             break;
 
