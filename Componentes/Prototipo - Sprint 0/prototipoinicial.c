@@ -99,6 +99,7 @@ void executaInstrucaoJ(); // (não implementado)
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
 void ULA();               // (não implementado)
+void memDados();          // (não implementado)
 
 // -------------------------------------------------------------------------
 
