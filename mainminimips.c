@@ -219,7 +219,7 @@ int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é r
 
 // Leitura da memória
 void lerMem(char *arq, instrucao **memoria, int linhas){
-    *memoria = (instrucao *)malloc(255 * sizeof(instrucao));
+    *memoria = (instrucao *)malloc(256 * sizeof(instrucao));
     arquivo = fopen(arq, "r");
     int i=0;
     char mem[17];
