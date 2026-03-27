@@ -245,20 +245,20 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 
 // PC
 void programCounter(instrucao *memoria, int linhas, int esc, int *bReg){
-
     int pc = 0;
+    char sair = '1';
 
-    while(pc < linhas){ // Clock
-
+    while((pc < linhas) && (sair != '0')){
+        // Clock
         printf("\nPC = %d | Memória = %s\n", pc, memoria[pc].mem);
 
         decodificaInst(&memoria[pc]);
         unidadeControle(&memoria[pc], &sinais);
 
         if(esc == 1){
-            printf("Pressione enter para o próximo passo\n\n");
+            printf("\nPressione enter para o próximo passo ou 0 para sair: ");
 
-            getchar();
+            sair = getchar();
         }
 
         pc++;
