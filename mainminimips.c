@@ -290,6 +290,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).tipoInst = tipoJ;
         (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
         printf("[ Tipo J ]\n");
+        printf("opcode: %d\n", (*instrucao).opcode);
         printf("address: %d\n", (*instrucao).addr);
         break;
 
@@ -299,6 +300,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
         (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
         printf("[ Tipo I ] \n");
+        printf("opcode: %d\n", (*instrucao).opcode);
         printf("rs: %d\n", (*instrucao).rs);
         printf("rt: %d\n", (*instrucao).rt);
         printf("imediato: %d\n", (*instrucao).imm);
@@ -323,7 +325,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
                 printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             else if((*sinais).ulaOp==2){
-                printf("Sub $%d, $%d, $%d", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                printf("Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             else if((*sinais).ulaOp==4){
                 printf("\nAND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
