@@ -307,7 +307,7 @@ void decodificaInst(instrucao *instrucao){
 
 //UC
 void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
-    // Testar
+
     switch((*instrucao).opcode){
         case 0: // opcode = 0000
             (*sinais).RegDst = 1;
