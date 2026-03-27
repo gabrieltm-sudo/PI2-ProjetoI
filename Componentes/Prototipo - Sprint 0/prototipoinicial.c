@@ -21,7 +21,7 @@ typedef struct{
 sinaisUC sinais;
 
 enum inst{
-    tipoI, tipoJ, tipoR
+    tipoI, tipoJ, tipoR // Utilizar na hora de executar as instruções
 };
 
 typedef struct {
@@ -336,7 +336,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 
         case 2:
             (*sinais).jump = 1;
-            printf("\nJ %d\n", (*instrucao).imm);
+            printf("\nJ %d\n", (*instrucao).addr);
             break;
 
         case 4: // opcode = 0100 - Addi
