@@ -99,7 +99,12 @@ void executaInstrucaoJ(); // (não implementado)
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
 void ULA();               // (não implementado)
-void memDados();          // (não implementado)
+
+// MEMÓRIA DE DADOS
+int *inicializaMemDados();
+void lerMemDados(xxx);
+void escreveMemDados(xxx);
+void imprimeMemDados(xxx);
 
 // -------------------------------------------------------------------------
 
@@ -111,6 +116,7 @@ int main(){
     int linhas=0;
 
     int *bReg = inicializaBReg();
+    int *memDados = inicializaMemDados();
 
     while (1) {
         printf("\nMenu:\n\n");
@@ -428,4 +434,28 @@ void imprimeBancoRegistradores(int *reg){
     for(int i=0;i<8;i++){
         printf("Registrador %d: %d\n",i, reg[i]);
     }
+}
+
+int *inicializaMemDados(){
+    int *memDados=NULL;
+
+    memDados = (int*)malloc(256*sizeof(int));
+
+    for(int i=0;i<256;i++){
+        memDados[i]=0;
+    }
+
+    return memDados;
+}
+
+void lerMemDados(){
+
+}
+
+void escreveMemDados(){
+
+}
+
+void imprimeMemDados(){
+
 }
