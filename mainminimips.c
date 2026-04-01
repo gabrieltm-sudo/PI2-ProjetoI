@@ -18,10 +18,8 @@ typedef struct{
     uint8_t ulaOp;
 }sinaisUC;
 
-sinaisUC sinais;
-
 enum inst{
-    tipoI, tipoJ, tipoR // Utilizar na hora de executar as instruções
+    tipoI, tipoJ, tipoR
 };
 
 typedef struct {
@@ -33,8 +31,8 @@ typedef struct {
     uint8_t rt;
     uint8_t rd;
     uint8_t funct;
-    int16_t imm;
-    uint16_t addr;
+    int8_t imm;
+    uint8_t addr;
 } instrucao;
 
 /*Instruções:
@@ -62,7 +60,6 @@ End: 8 bits;
 void imprimeSimulador(); // (não implementado)
 void salvaASM();         // (não implementado)
 void salvaDAT();         // (não implementado)
-void executaPrograma();  // (não implementado)
 void executaInstrucao(); // (não implementado - execução ainda não faz parte)
 void voltaInstrucao();   // (não implementado)
 
@@ -73,7 +70,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas);
 
 
 // PROGRAM COUNTER (PC) / BUSCA
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg);
+void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais);
 
 
 // DECODIFICAÇÃO
@@ -92,6 +89,8 @@ void imprimeBancoRegistradores(int *reg);
 
 
 // EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
+void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg); // falta a memória de dados
+int8_t extensorBit(int8_t imm);
 void executaInstrucaoR(); // (não implementado)
 void executaInstrucaoI(); // (não implementado)
 void executaInstrucaoJ(); // (não implementado)
@@ -113,6 +112,7 @@ int main(){
     int esc;
     int opcao;
     instrucao *memoria = NULL;
+    sinaisUC sinais;
     int linhas=0;
 
     int *bReg = inicializaBReg();
@@ -175,13 +175,13 @@ int main(){
             case 7:
                 //Executar programa (run)
                 esc = 0;
-                programCounter(memoria, linhas, esc, bReg);
+                programCounter(memoria, linhas, esc, bReg, &sinais);
                 break;
 
             case 8:
                 //Executa instrução (step)
                 esc = 1;
-                programCounter(memoria, linhas, esc, bReg);
+                programCounter(memoria, linhas, esc, bReg, &sinais);
                 break;
 
             case 9:
@@ -250,7 +250,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 }
 
 // PC
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg){
+void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais){
     int pc = 0;
     char sair = '1';
 
@@ -259,7 +259,8 @@ void programCounter(instrucao *memoria, int linhas, int esc, int *bReg){
         printf("\nPC = %d | Memória = %s\n", pc, memoria[pc].mem);
 
         decodificaInst(&memoria[pc]);
-        unidadeControle(&memoria[pc], &sinais);
+        unidadeControle(&memoria[pc], sinais);
+        executaInstrucao(&memoria[pc], sinais, bReg); // Adicionar memória de dados
 
         if(esc == 1){
             printf("\nPressione enter para o próximo passo ou 0 para sair: ");
@@ -423,7 +424,7 @@ void lerRegistradores(int *reg, int rs, int rt, int *valRs, int *valRt){
 }
 
 void escreveRegistrador(int *reg, int rd, int valor, int EscReg){
-    if(EscReg){
+    if(EscReg){ // que tal adicionar rd!=0 também? Para não mudar $0
         reg[rd] = valor;
     }
 }
@@ -458,4 +459,54 @@ void escreveMemDados(){
 
 void imprimeMemDados(){
 
+}
+
+// *Adicionar memória de dados
+void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg ){  
+    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal; // passar para uint8_t aqui e nas funções
+
+    lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
+
+    if((*sinais).UlaFonte==1){
+        // operador2=extensorBit((*instrucao).imm); 
+        printf("\nextensor em andamento\n"); // passar por extensor 
+    }
+
+    // UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp);
+
+    if((*sinais).EscMem==1){
+        printf("\nlógica para escrever dado da memória\n");
+        printf("em andamento\n");
+    }// else{
+        // deve ler sempre (?)
+    //}
+
+    if((*sinais).MemParaReg==0){
+        // dadoFinal = lerMemDados();
+        printf("\nPega valor do banco de dados para banco de registradores\n");
+        printf("em andamento\n");
+    }else{
+        dadoFinal = UlaResultado;
+    }
+    
+    if((*sinais).RegDst==0){
+        regDst = (*instrucao).rd;
+    }else{
+        regDst = (*instrucao).rt;
+    }
+
+    escreveRegistrador(bReg, (*instrucao).rt, dadoFinal, (*sinais).EscReg);
+    printf("\nRegistrador a ser escrito: $%d\n", regDst);
+
+    if((*sinais).branch==1){  // && UlaResposta == 0?
+        printf("\nlógica branch if equal\n");
+    }
+
+}
+
+int8_t extensorBit(int8_t imm){
+    printf("\nlógica para extender bits\n");
+    printf("Em andamento\n");
+
+    return imm;
 }
