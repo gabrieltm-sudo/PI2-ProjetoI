@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-FILE* arquivo;
+FILE *arquivo, *arquivoMemDados;
 
 // struct de sinais
 typedef struct{
@@ -60,7 +60,6 @@ End: 8 bits;
 void imprimeSimulador(); // (não implementado)
 void salvaASM();         // (não implementado)
 void salvaDAT();         // (não implementado)
-void executaInstrucao(); // (não implementado - execução ainda não faz parte)
 void voltaInstrucao();   // (não implementado)
 
 
@@ -101,9 +100,10 @@ int ULA(int op1, int op2, int ulaOp, int *zero);
 
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
-void lerMemDados();
-void escreveMemDados();
-void imprimeMemDados();
+int contaMemDados(char *arqMem);
+void lerMemDados(char *arqMem, int linhasMemDados, int **memDados);
+void escreveMemDados(int *memDados, int endereco, int valor);
+void imprimeMemDados(int *memDados, int inicio, int fim);
 
 // -------------------------------------------------------------------------
 
@@ -113,7 +113,7 @@ int main(){
     int opcao;
     instrucao *memoria = NULL;
     sinaisUC sinais;
-    int linhas=0;
+    int linhas=0, linhasMemDados=0;
 
     int *bReg = inicializaBReg();
     int *memDados = inicializaMemDados();
@@ -139,19 +139,30 @@ int main(){
             case 1:
                 //Carregar Mem de Instr.
                 char arq[20];
-                printf("\nDigite o nome do arquivo de memória: ");
+                printf("\nDigite o nome do arquivo da memória de instruções (.mem): ");
 
                 fgets(arq, sizeof(arq), stdin);
                 arq[strcspn(arq, "\n")] = '\0';
 
                 linhas = contaLinhas(arq);
-                printf("\nNúmero de linhas do arquivo: %d\n", linhas);
+                printf("\n%d Instruções.\n", linhas);
 
                 lerMem(arq, &memoria, linhas);
                 break;
 
             case 2:
                 //Carregar Mem de Dados
+                char arqMem[20];
+                printf("\nDigite o nome do arquivo da memória de dados (.dat): ");
+
+                fgets(arqMem, sizeof(arqMem), stdin);
+                arqMem[strcspn(arqMem, "\n")] = '\0';
+
+                linhasMemDados = contaMemDados(arqMem);
+                printf("\n%d Dados encontrados.\n", linhasMemDados);
+
+                lerMemDados(arqMem, linhasMemDados, &memDados);
+
                 break;
 
             case 3:
@@ -220,6 +231,26 @@ int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é r
     }
 
     fclose(arquivo);
+    return count;
+}
+
+int contaMemDados(char *arqMem){
+    arquivoMemDados = fopen(arqMem, "r");
+    char ch;
+    int count=0;
+
+    if(arquivoMemDados==NULL){
+        printf("\nAcesso negado!\n");
+        return 0;
+    }
+
+    while((ch=fgetc(arquivoMemDados))!=EOF){
+        if(ch=='\n'){
+            count++;
+        }
+    }
+
+    fclose(arquivoMemDados);
     return count;
 }
 
@@ -411,15 +442,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 }
 
 int *inicializaBReg(){
-    int *reg=NULL;
-
-    reg = (int*)malloc(8*sizeof(int));
-
-    for(int i=0;i<8;i++){
-        reg[i]=0;
-    }
-
-    return reg;
+    return calloc(8, sizeof(int));
 }
 
 void lerRegistradores(int *reg, int rs, int rt, int *valRs, int *valRt){
@@ -428,7 +451,7 @@ void lerRegistradores(int *reg, int rs, int rt, int *valRs, int *valRt){
 }
 
 void escreveRegistrador(int *reg, int rd, int valor, int EscReg){
-    if(EscReg){ // que tal adicionar rd!=0 também? Para não mudar $0
+    if(EscReg){
         reg[rd] = valor;
     }
 }
@@ -442,27 +465,50 @@ void imprimeBancoRegistradores(int *reg){
 }
 
 int *inicializaMemDados(){
-    int *memDados=NULL;
+    return calloc(256, sizeof(int));
+}
 
-    memDados = (int*)malloc(256*sizeof(int));
+void lerMemDados(char *arqMem, int linhasMemDados, int **memDados) {
+    int i=0;
 
-    for(int i=0;i<256;i++){
-        memDados[i]=0;
+    if (*memDados == NULL) {
+        printf("\nErro ao alocar memória\n");
+        return;
     }
 
-    return memDados;
+    arquivoMemDados = fopen(arqMem, "r");
+    if (arquivoMemDados == NULL) {
+        printf("\nErro ao abrir o arquivo %s\n", arqMem);
+        return;
+    }
+
+    int valor;
+
+    for(i = 0; i < linhasMemDados; i++) {
+        fscanf(arquivoMemDados, "%d", &(*memDados)[i]);
+    }
+
+    printf("\nMemória de Dados:\n\n");
+
+    for(i=0;i<linhasMemDados;i++){
+        printf("Posição de Memória %d: %d\n",i,(*memDados)[i]);
+    }
+
+    fclose(arquivoMemDados);
 }
 
-void lerMemDados(){
-
+void escreveMemDados(int *memDados, int endereco, int valor) {
+    if (endereco >= 0 && endereco < 256) {
+        memDados[endereco] = valor;
+    } else {
+        printf("\nErro ao escrever na memória.\n");
+    }
 }
 
-void escreveMemDados(){
-
-}
-
-void imprimeMemDados(){
-
+void imprimeMemDados(int *memDados, int inicio, int fim) {
+    for (int i=inicio; i<=fim; i++) {
+        printf("Endereço %d: %d\n", i, memDados[i]);
+    }
 }
 
 int ULA(int op1, int op2, int ulaOp, int *zero){
