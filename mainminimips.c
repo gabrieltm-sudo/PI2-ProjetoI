@@ -70,7 +70,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas);
 
 
 // PROGRAM COUNTER (PC) / BUSCA
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais);
+void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
 
 
 // DECODIFICAÇÃO
@@ -97,18 +97,18 @@ void executaInstrucaoJ(); // (não implementado)
 
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
-void ULA();               // (não implementado)
+int ULA(int op1, int op2, int ulaOp, int *zero);
 
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
-void lerMemDados(xxx);
-void escreveMemDados(xxx);
-void imprimeMemDados(xxx);
+void lerMemDados();
+void escreveMemDados();
+void imprimeMemDados();
 
 // -------------------------------------------------------------------------
 
 int main(){
-
+    int pc = 0;
     int esc;
     int opcao;
     instrucao *memoria = NULL;
@@ -175,13 +175,13 @@ int main(){
             case 7:
                 //Executar programa (run)
                 esc = 0;
-                programCounter(memoria, linhas, esc, bReg, &sinais);
+                programCounter(memoria, linhas, esc, bReg, &sinais, &pc);
                 break;
 
             case 8:
                 //Executa instrução (step)
                 esc = 1;
-                programCounter(memoria, linhas, esc, bReg, &sinais);
+                programCounter(memoria, linhas, esc, bReg, &sinais, &pc);
                 break;
 
             case 9:
@@ -250,25 +250,29 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 }
 
 // PC
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais){
-    int pc = 0;
+void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
     char sair = '1';
 
-    while((pc < linhas) && (sair != '0')){
-        // Clock
-        printf("\nPC = %d | Memória = %s\n", pc, memoria[pc].mem);
+    while((*pc < linhas) && (sair != '0')){
 
-        decodificaInst(&memoria[pc]);
-        unidadeControle(&memoria[pc], sinais);
-        executaInstrucao(&memoria[pc], sinais, bReg); // Adicionar memória de dados
+        printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
 
+        // Decodifica
+        decodificaInst(&memoria[*pc]);
+
+        // Controle
+        unidadeControle(&memoria[*pc], sinais);
+
+        // Executa
+        executaInstrucao(&memoria[*pc], sinais, bReg);
+
+        *pc = *pc + 1;
+
+        // step
         if(esc == 1){
-            printf("\nPressione enter para o próximo passo ou 0 para sair: ");
-
+            printf("\nPressione ENTER para próximo passo ou 0 para sair: ");
             sair = getchar();
         }
-
-        pc++;
     }
 }
 
@@ -461,6 +465,52 @@ void imprimeMemDados(){
 
 }
 
+int ULA(int op1, int op2, int ulaOp, int *zero){
+    int resultado = 0;
+
+    switch(ulaOp){
+        case 0: // ADD
+            resultado = op1 + op2;
+            break;
+
+        case 2: // SUB
+            resultado = op1 - op2;
+            break;
+
+        case 4: // AND
+            resultado = op1 & op2;
+            break;
+
+        case 5: // OR
+            resultado = op1 | op2;
+            break;
+
+        case 6: //BEQ
+            resultado = op1 - op2;
+            break;
+
+        case 1: // ADDI
+            resultado = op1 + op2;
+            break;
+
+        case 3: // LW/SW
+            resultado = op1 + op2;
+            break;
+
+        default:
+            printf("\nOperação da ULA inválida!\n");
+    }
+
+    // flag zero
+    if(resultado == 0){
+        *zero = 1;
+    } else {
+        *zero = 0;
+    }
+
+    return resultado;
+}
+
 // *Adicionar memória de dados
 void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg ){  
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal; // passar para uint8_t aqui e nas funções
@@ -473,6 +523,11 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg ){
     }
 
     // UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp);
+    int zero = 0;
+
+    UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
+
+    printf("\nULA: %d op %d = %d\n", operador1, operador2, UlaResultado);
 
     if((*sinais).EscMem==1){
         printf("\nlógica para escrever dado da memória\n");
