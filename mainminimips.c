@@ -61,8 +61,8 @@ void imprimeSimulador(); // (não implementado)
 void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -89,7 +89,7 @@ void imprimeBancoRegistradores(int *reg);
 
 
 // EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
-void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg); // falta a memória de dados
+void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg, int *memDados);
 int extensorBit(int8_t imm);
 
 
@@ -187,13 +187,13 @@ int main(){
             case 7:
                 //Executar programa (run)
                 esc = 0;
-                run(memoria, linhas, esc, bReg, &sinais, &pc);
+                run(memoria, linhas, esc, bReg, &sinais, &pc, memDados);
                 break;
 
             case 8:
                 //Executa instrução (step)
                 esc = 1;
-                step(memoria, linhas, esc, bReg, &sinais, &pc);
+                step(memoria, linhas, esc, bReg, &sinais, &pc, memDados);
                 break;
 
             case 9:
@@ -293,7 +293,7 @@ void programCounter(int *pc){
     }
 
 // RUN 
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
 
     while(*pc < linhas){
         
@@ -306,14 +306,14 @@ void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, i
         unidadeControle(&memoria[*pc], sinais);
 
         // Executa
-        executaInstrucao(&memoria[*pc], sinais, bReg);
+        executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
 
         //PC
         programCounter(pc);
     }
 }
 
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
 
     if(*pc >= linhas){
         printf("\nFim das instruções");
@@ -329,7 +329,7 @@ void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, 
         unidadeControle(&memoria[*pc], sinais);
 
         // Executa
-        executaInstrucao(&memoria[*pc], sinais, bReg);
+        executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
 
         //PC
         programCounter(pc);
@@ -604,7 +604,7 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
     return resultado;
 }
 
-void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg){
+void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
 
 
@@ -617,15 +617,13 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg){
     UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
 
     if((*sinais).EscMem==1){
-        // escreveMemDados(memDados, UlaResultado, (*instrucao).rt);
+        escreveMemDados(memDados, UlaResultado, (*instrucao).rt);
     }
 
     if((*sinais).MemParaReg==1){
         dadoFinal = UlaResultado;
     }else{
-        // dadoFinal = lerMemDados();
-        printf("\nPega valor do banco de dados para banco de registradores\n");
-        printf("em andamento\n");
+        dadoFinal = retornaMemoria(memDados, UlaResultado);
     }
     
     if((*sinais).RegDst==1){
