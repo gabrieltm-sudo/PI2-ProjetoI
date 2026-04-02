@@ -58,7 +58,7 @@ End: 8 bits;
 
 // MENU / CONTROLE DO SISTEMA
 void imprimeSimulador(); // (não implementado)
-void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas);
+void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
 
@@ -175,7 +175,7 @@ int main(){
 
             case 5:
                 // Salvar .asm
-                salvaASM(memoria, &pc, &sinais, linhas);
+                salvaASM(memoria, &sinais, linhas);
                 break;
 
             case 6:
@@ -626,8 +626,8 @@ int extensorBit(int8_t imm){
     return imm;
 }
 
-void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
-    int cpPC = *pc = 0;
+void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas) {
+    int pc = 0;
 
     arquivo = fopen("main.asm", "w");
 
@@ -644,17 +644,17 @@ void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
 
     fclose(arquivo);
 
-    while(cpPC < linhas){
+    while(pc < linhas){
 
         // Decodifica
-        decodificaInst(&memoria[cpPC]);
+        decodificaInst(&memoria[pc]);
 
         arquivo=fopen("main.asm","a");
         // Controle
-        unidadeControle(&memoria[cpPC], sinais);
+        unidadeControle(&memoria[pc], sinais);
         fclose(arquivo);
 
-        cpPC++;
+        pc++;
     }
 
     arquivo = fopen("main.asm", "a");
