@@ -203,6 +203,7 @@ int main(){
                 //Sair
                 free(bReg);
                 free(memoria);
+                free(memDados);
                 return 0;
 
             default:
