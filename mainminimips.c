@@ -89,10 +89,7 @@ void imprimeBancoRegistradores(int *reg);
 
 // EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
 void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg); // falta a memória de dados
-int8_t extensorBit(int8_t imm);
-void executaInstrucaoR(); // (não implementado)
-void executaInstrucaoI(); // (não implementado)
-void executaInstrucaoJ(); // (não implementado)
+int extensorBit(int8_t imm);
 
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
@@ -378,8 +375,16 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             }
             break;
 
-        case 2:
+        case 2: // opcode = 0010 - J
+            (*sinais).RegDst = 0;
+            (*sinais).EscReg = 0;
+            (*sinais).UlaFonte = 0;
+            (*sinais).ulaOp = 0;
+            (*sinais).EscMem = 0;
+            (*sinais).MemParaReg = 0;
             (*sinais).jump = 1;
+            (*sinais).branch = 0;
+
             printf("\nJ %d\n", (*instrucao).addr);
             break;
 
@@ -557,57 +562,53 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
     return resultado;
 }
 
-// *Adicionar memória de dados
 void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg ){  
-    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal; // passar para uint8_t aqui e nas funções
+    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
+
 
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
 
     if((*sinais).UlaFonte==1){
-        // operador2=extensorBit((*instrucao).imm); 
-        printf("\nextensor em andamento\n"); // passar por extensor 
+        operador2=extensorBit((*instrucao).imm); 
     }
-
-    // UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp);
-    int zero = 0;
 
     UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
 
-    printf("\nULA: %d op %d = %d\n", operador1, operador2, UlaResultado);
-
     if((*sinais).EscMem==1){
-        printf("\nlógica para escrever dado da memória\n");
-        printf("em andamento\n");
-    }// else{
-        // deve ler sempre (?)
-    //}
+        // escreveMemDados(memDados, UlaResultado, (*instrucao).rt);
+    }
 
-    if((*sinais).MemParaReg==0){
+    if((*sinais).MemParaReg==1){
+        dadoFinal = UlaResultado;
+    }else{
         // dadoFinal = lerMemDados();
         printf("\nPega valor do banco de dados para banco de registradores\n");
         printf("em andamento\n");
-    }else{
-        dadoFinal = UlaResultado;
     }
     
-    if((*sinais).RegDst==0){
+    if((*sinais).RegDst==1){
         regDst = (*instrucao).rd;
     }else{
         regDst = (*instrucao).rt;
     }
 
-    escreveRegistrador(bReg, (*instrucao).rt, dadoFinal, (*sinais).EscReg);
-    printf("\nRegistrador a ser escrito: $%d\n", regDst);
+    if((*sinais).EscReg==1){
+        escreveRegistrador(bReg, regDst, dadoFinal, (*sinais).EscReg);
+        printf("\nRegistrador a ser escrito: $%d com o valor %d\n", regDst, dadoFinal);
+    }
 
-    if((*sinais).branch==1){  // && UlaResposta == 0?
-        printf("\nlógica branch if equal\n");
+    if((*sinais).branch==1 && zero == 1){ 
+        printf("Pulo condicional detectado\n");
     }
 
 }
 
-int8_t extensorBit(int8_t imm){
-    printf("\nlógica para extender bits\n");
-    printf("Em andamento\n");
+int extensorBit(int8_t imm){
+    imm = imm<<2;
+    printf("\n%d", imm);
+
+    imm = imm>>2;
+    printf("\n%d", imm);
 
     return imm;
 }
