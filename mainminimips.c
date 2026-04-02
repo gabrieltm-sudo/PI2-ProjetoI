@@ -498,8 +498,6 @@ void lerMemDados(char *arqMem, int linhasMemDados, int **memDados) {
         return;
     }
 
-    int valor;
-
     for(i = 0; i < linhasMemDados; i++) {
         fscanf(arquivoMemDados, "%d", &(*memDados)[i]);
     }
@@ -629,7 +627,7 @@ int extensorBit(int8_t imm){
 }
 
 void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
-    *pc = 0;
+    int cpPC = *pc = 0;
 
     arquivo = fopen("main.asm", "w");
 
@@ -646,17 +644,17 @@ void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
 
     fclose(arquivo);
 
-    while(*pc < linhas){
+    while(cpPC < linhas){
 
         // Decodifica
-        decodificaInst(&memoria[*pc]);
+        decodificaInst(&memoria[cpPC]);
 
         arquivo=fopen("main.asm","a");
         // Controle
-        unidadeControle(&memoria[*pc], sinais);
+        unidadeControle(&memoria[cpPC], sinais);
         fclose(arquivo);
 
-        (*pc)++;
+        cpPC++;
     }
 
     arquivo = fopen("main.asm", "a");
