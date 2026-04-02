@@ -100,6 +100,7 @@ int *inicializaMemDados();
 int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int linhasMemDados, int **memDados);
 void escreveMemDados(int *memDados, int endereco, int valor);
+int retornaMemoria(int *memDados, int enderecoULA);
 void imprimeMemDados(int *memDados, int inicio, int fim);
 
 // -------------------------------------------------------------------------
@@ -179,6 +180,7 @@ int main(){
 
             case 6:
                 // Salvar .dat
+                salvaDAT(memDados,linhasMemDados);
                 break;
 
             case 7:
@@ -519,6 +521,10 @@ void escreveMemDados(int *memDados, int endereco, int valor) {
     }
 }
 
+int retornaMemoria(int *memDados, int enderecoULA) {
+    return memDados[enderecoULA];
+}
+
 void imprimeMemDados(int *memDados, int inicio, int fim) {
     for (int i=inicio; i<=fim; i++) {
         printf("Endereço %d: %d\n", i, memDados[i]);
@@ -664,4 +670,18 @@ void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
 }
 
 void salvaDAT(int *memDados, int linhasMemDados){
+    arquivo = fopen("dados.dat","w");
+
+    if (arquivo == NULL) {
+        printf("Erro ao criar arquivo\n");
+        return;
+    }
+
+    for(int i=0;i<linhasMemDados;i++){
+        fprintf(arquivo,"%d\n",memDados[i]);
+    }
+
+    fclose(arquivo);
+
+    printf("\nArquivo 'dados.dat' salvo!\n");
 }
