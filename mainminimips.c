@@ -61,7 +61,8 @@ void imprimeSimulador(); // (não implementado)
 void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
-
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -69,7 +70,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas);
 
 
 // PROGRAM COUNTER (PC) / BUSCA
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc);
+void programCounter(int *pc);
 
 
 // DECODIFICAÇÃO
@@ -186,13 +187,13 @@ int main(){
             case 7:
                 //Executar programa (run)
                 esc = 0;
-                programCounter(memoria, linhas, esc, bReg, &sinais, &pc);
+                run(memoria, linhas, esc, bReg, &sinais, &pc);
                 break;
 
             case 8:
                 //Executa instrução (step)
                 esc = 1;
-                programCounter(memoria, linhas, esc, bReg, &sinais, &pc);
+                step(memoria, linhas, esc, bReg, &sinais, &pc);
                 break;
 
             case 9:
@@ -257,7 +258,11 @@ int contaMemDados(char *arqMem){
 
 // Leitura da memória
 void lerMem(char *arq, instrucao **memoria, int linhas){
-    *memoria = (instrucao *)malloc(256 * sizeof(instrucao));
+    *memoria = calloc(256, sizeof(instrucao));
+    if(memoria == NULL){
+    printf("\nMemoria nao carregada!\n");
+    return;
+}
     arquivo = fopen(arq, "r");
     int i=0;
     char mem[17];
@@ -282,13 +287,18 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 }
 
 // PC
-void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
-    char sair = '1';
+void programCounter(int *pc){
 
-    while((*pc < linhas) && (sair != '0')){
+        (*pc)++;
+    }
 
+// RUN 
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
+
+    while(*pc < linhas){
+        
         printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
-
+       
         // Decodifica
         decodificaInst(&memoria[*pc]);
 
@@ -298,15 +308,33 @@ void programCounter(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC
         // Executa
         executaInstrucao(&memoria[*pc], sinais, bReg);
 
-        *pc = *pc + 1;
-
-        // step
-        if(esc == 1){
-            printf("\nPressione ENTER para próximo passo ou 0 para sair: ");
-            sair = getchar();
-        }
+        //PC
+        programCounter(pc);
     }
 }
+
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc){
+
+    if(*pc >= linhas){
+        printf("\nFim das instruções");
+        return;
+    }
+
+        printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
+       
+        // Decodifica
+        decodificaInst(&memoria[*pc]);
+
+        // Controle
+        unidadeControle(&memoria[*pc], sinais);
+
+        // Executa
+        executaInstrucao(&memoria[*pc], sinais, bReg);
+
+        //PC
+        programCounter(pc);
+    }
+
 
 // Decodificação
 void decodificaInst(instrucao *instrucao){
