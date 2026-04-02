@@ -58,9 +58,9 @@ End: 8 bits;
 
 // MENU / CONTROLE DO SISTEMA
 void imprimeSimulador(); // (não implementado)
-void salvaASM();         // (não implementado)
-void salvaDAT();         // (não implementado)
-void voltaInstrucao();   // (não implementado)
+void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas);
+void salvaDAT(int *memDados, int linhasMemDados);
+void voltaInstrucao();
 
 
 // MEMÓRIA
@@ -174,6 +174,7 @@ int main(){
 
             case 5:
                 // Salvar .asm
+                salvaASM(memoria, &pc, &sinais, linhas);
                 break;
 
             case 6:
@@ -348,7 +349,6 @@ void decodificaInst(instrucao *instrucao){
 
 //UC
 void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
-
     switch((*instrucao).opcode){
         case 0: // opcode = 0000
             (*sinais).RegDst = 1;
@@ -361,17 +361,21 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).branch = 0;
 
             if((*sinais).ulaOp==0){
-                printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                //printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                fprintf(arquivo,"    Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             else if((*sinais).ulaOp==2){
-                printf("Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                //printf("Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                fprintf(arquivo,"    Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             else if((*sinais).ulaOp==4){
-                printf("\nAND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                //printf("\nAND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                fprintf(arquivo,"    AND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
 
             }
             else if((*sinais).ulaOp==5){
-                printf("\nOR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                //printf("OR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
+                fprintf(arquivo,"    OR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
             }
             break;
 
@@ -385,7 +389,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 1;
             (*sinais).branch = 0;
 
-            printf("\nJ %d\n", (*instrucao).addr);
+            //printf("\nJ %d\n", (*instrucao).addr);
+            fprintf(arquivo,"    J %d\n", (*instrucao).addr);
             break;
 
         case 4: // opcode = 0100 - Addi
@@ -398,7 +403,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
 
-            printf("\nAddi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            //printf("\nAddi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            fprintf(arquivo,"    Addi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
             break;
 
         case 8: // opcode = 1000 - BEQ
@@ -411,7 +417,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 1;
 
-            printf("\nbeq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            //printf("\nbeq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            fprintf(arquivo,"    beq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
             break;
 
@@ -425,7 +432,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
             
-            printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            //printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            fprintf(arquivo,"    lw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
             break;
 
@@ -439,7 +447,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
 
-            printf("\nsw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            //printf("\nsw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
+            fprintf(arquivo,"    sw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
             break;
     }
@@ -562,7 +571,7 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
     return resultado;
 }
 
-void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg ){  
+void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg){
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
 
 
@@ -611,4 +620,48 @@ int extensorBit(int8_t imm){
     printf("\n%d", imm);
 
     return imm;
+}
+
+void salvaASM(instrucao *memoria, int *pc, sinaisUC *sinais, int linhas) {
+    *pc = 0;
+
+    arquivo = fopen("main.asm", "w");
+
+    if (arquivo == NULL) {
+        printf("Erro ao criar arquivo\n");
+        return;
+    }
+
+    fprintf(arquivo, ".data\n\n");
+
+    fprintf(arquivo, ".text\n");
+    fprintf(arquivo, ".globl main\n");
+    fprintf(arquivo, "\nmain:\n");
+
+    fclose(arquivo);
+
+    while(*pc < linhas){
+
+        // Decodifica
+        decodificaInst(&memoria[*pc]);
+
+        arquivo=fopen("main.asm","a");
+        // Controle
+        unidadeControle(&memoria[*pc], sinais);
+        fclose(arquivo);
+
+        (*pc)++;
+    }
+
+    arquivo = fopen("main.asm", "a");
+
+    fprintf(arquivo, "\n    li $v0, 10\n");
+    fprintf(arquivo, "    syscall\n");
+
+    fclose(arquivo);
+
+    printf("\nArquivo 'main.asm' salvo!\n");
+}
+
+void salvaDAT(int *memDados, int linhasMemDados){
 }
