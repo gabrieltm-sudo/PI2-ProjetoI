@@ -295,6 +295,10 @@ void programCounter(int *pc){
 // RUN 
 void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
 
+    if(*pc >= linhas){
+        printf("\nFim das instruções");
+        return;
+    }
     while(*pc < linhas){
         
         printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
