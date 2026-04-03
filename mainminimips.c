@@ -58,11 +58,11 @@ End: 8 bits;
 
 // MENU / CONTROLE DO SISTEMA
 void imprimeSimulador(); // (não implementado)
-void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas);
+void salvaASM(instrucao *memoria, int linhas, int *decodificado);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado);
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -102,7 +102,7 @@ int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int linhasMemDados, int **memDados);
 void escreveMemDados(int *memDados, int endereco, int valor);
 int retornaMemoria(int *memDados, int enderecoULA);
-void imprimeMemDados(int *memDados, int inicio, int fim);
+void imprimeMemDados(int *memDados, int linhasMemDados);
 
 // -------------------------------------------------------------------------
 
@@ -110,6 +110,7 @@ int main(){
     int pc = 0;
     int esc;
     int opcao;
+    int decodificado=0;
     instrucao *memoria = NULL;
     sinaisUC sinais;
     int linhas=0, linhasMemDados=0;
@@ -172,11 +173,13 @@ int main(){
 
             case 4:
                 //Imprimir simulador
+                imprimeBancoRegistradores(bReg);
+                imprimeMemDados(memDados, linhasMemDados);
                 break;
 
             case 5:
                 // Salvar .asm
-                salvaASM(memoria, &sinais, linhas);
+                salvaASM(memoria, linhas, &decodificado);
                 break;
 
             case 6:
@@ -187,13 +190,13 @@ int main(){
             case 7:
                 //Executar programa (run)
                 esc = 0;
-                run(memoria, linhas, esc, bReg, &sinais, &pc, memDados);
+                run(memoria, linhas, esc, bReg, &sinais, &pc, memDados, &decodificado);
                 break;
 
             case 8:
                 //Executa instrução (step)
                 esc = 1;
-                step(memoria, linhas, esc, bReg, &sinais, &pc, memDados);
+                step(memoria, linhas, esc, bReg, &sinais, &pc, memDados, &decodificado);
                 break;
 
             case 9:
@@ -293,10 +296,10 @@ void programCounter(int *pc){
     }
 
 // RUN 
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
+void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado){
 
     if(*pc >= linhas){
-        printf("\nFim das instruções");
+        printf("\nFim das instruções!\n");
         return;
     }
     while(*pc < linhas){
@@ -315,36 +318,40 @@ void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, i
         //PC
         programCounter(pc);
     }
+
+    *decodificado=1;
 }
 
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
+void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado){
 
     if(*pc >= linhas){
-        printf("\nFim das instruções");
+        printf("\nFim das instruções!\n");
         return;
     }
 
-        printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
-       
-        // Decodifica
-        decodificaInst(&memoria[*pc]);
+    printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
 
-        // Controle
-        unidadeControle(&memoria[*pc], sinais);
+    // Decodifica
+    decodificaInst(&memoria[*pc]);
 
-        // Executa
-        executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
+    // Controle
+    unidadeControle(&memoria[*pc], sinais);
 
-        //PC
-        programCounter(pc);
-    }
+    // Executa
+    executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
+
+    //PC
+    programCounter(pc);
+
+
+    *decodificado=1;
+}
 
 
 // Decodificação
 void decodificaInst(instrucao *instrucao){
 
     (*instrucao).opcode = (*instrucao).instrucao >> 12; // Pega os 4 bits do opcode
-
 
     switch((*instrucao).opcode){
     case 0:
@@ -353,7 +360,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).rt = ((*instrucao).instrucao >> 6) & 0x7; // pega os 3 bits do rt
         (*instrucao).rd = ((*instrucao).instrucao >> 3) & 0x7; // pega os 3 bits do rd
         (*instrucao).funct = ((*instrucao).instrucao) & 0x7;
-        printf("[ Tipo R ] \n");
+        printf("\n[ Tipo R ] \n");
         printf("opcode: %d\n", (*instrucao).opcode);
         printf("rs: %d\n", (*instrucao).rs);
         printf("rt: %d\n", (*instrucao).rt);
@@ -364,7 +371,7 @@ void decodificaInst(instrucao *instrucao){
     case 2:
         (*instrucao).tipoInst = tipoJ;
         (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
-        printf("[ Tipo J ]\n");
+        printf("\n[ Tipo J ]\n");
         printf("opcode: %d\n", (*instrucao).opcode);
         printf("address: %d\n", (*instrucao).addr);
         break;
@@ -374,7 +381,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).rs = ((*instrucao).instrucao >> 9) &0x7; // pega os 3 bits do rs
         (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
         (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
-        printf("[ Tipo I ] \n");
+        printf("\n[ Tipo I ] \n");
         printf("opcode: %d\n", (*instrucao).opcode);
         printf("rs: %d\n", (*instrucao).rs);
         printf("rt: %d\n", (*instrucao).rt);
@@ -395,23 +402,6 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
 
-            if((*sinais).ulaOp==0){
-                //printf("Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                fprintf(arquivo,"    Add $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-            }
-            else if((*sinais).ulaOp==2){
-                //printf("Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                fprintf(arquivo,"    Sub $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-            }
-            else if((*sinais).ulaOp==4){
-                //printf("\nAND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                fprintf(arquivo,"    AND $%d, $%d, $%d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-
-            }
-            else if((*sinais).ulaOp==5){
-                //printf("OR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-                fprintf(arquivo,"    OR $%d, $%d, %d\n", (*instrucao).rd, (*instrucao).rs, (*instrucao).rt);
-            }
             break;
 
         case 2: // opcode = 0010 - J
@@ -424,8 +414,6 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 1;
             (*sinais).branch = 0;
 
-            //printf("\nJ %d\n", (*instrucao).addr);
-            fprintf(arquivo,"    J %d\n", (*instrucao).addr);
             break;
 
         case 4: // opcode = 0100 - Addi
@@ -438,8 +426,6 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
 
-            //printf("\nAddi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-            fprintf(arquivo,"    Addi $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
             break;
 
         case 8: // opcode = 1000 - BEQ
@@ -451,9 +437,6 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
             (*sinais).branch = 1;
-
-            //printf("\nbeq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-            fprintf(arquivo,"    beq $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
 
             break;
 
@@ -467,9 +450,6 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
             
-            //printf("\nlw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-            fprintf(arquivo,"    lw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-
             break;
 
         case 15: // opcode = 1111 - sw
@@ -482,12 +462,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).jump = 0;
             (*sinais).branch = 0;
 
-            //printf("\nsw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-            fprintf(arquivo,"    sw $%d, $%d, %d\n", (*instrucao).rs, (*instrucao).rt, (*instrucao).imm);
-
             break;
     }
-
 }
 
 int *inicializaBReg(){
@@ -511,6 +487,7 @@ void imprimeBancoRegistradores(int *reg){
     for(int i=0;i<8;i++){
         printf("Registrador %d: %d\n",i, reg[i]);
     }
+    printf("\n");
 }
 
 int *inicializaMemDados(){
@@ -535,11 +512,7 @@ void lerMemDados(char *arqMem, int linhasMemDados, int **memDados) {
         fscanf(arquivoMemDados, "%d", &(*memDados)[i]);
     }
 
-    printf("\nMemória de Dados:\n\n");
-
-    for(i=0;i<linhasMemDados;i++){
-        printf("Posição de Memória %d: %d\n",i,(*memDados)[i]);
-    }
+    imprimeMemDados(*memDados, linhasMemDados);
 
     fclose(arquivoMemDados);
 }
@@ -556,9 +529,12 @@ int retornaMemoria(int *memDados, int enderecoULA) {
     return memDados[enderecoULA];
 }
 
-void imprimeMemDados(int *memDados, int inicio, int fim) {
-    for (int i=inicio; i<=fim; i++) {
-        printf("Endereço %d: %d\n", i, memDados[i]);
+void imprimeMemDados(int *memDados, int linhasMemDados) {
+    printf("\nMemória de Dados:\n\n");
+
+    int i=0;
+    for(i=0;i<linhasMemDados;i++){
+        printf("Posição de Memória %d: %d\n",i,(memDados)[i]);
     }
 }
 
@@ -642,28 +618,28 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *me
     }
 
     if((*sinais).branch==1 && zero == 1){ 
-        printf("Pulo condicional detectado\n");
+        printf("\nPulo condicional detectado\n");
     }
 
 }
 
 int extensorBit(int8_t imm){
     imm = imm<<2;
-    printf("\n%d", imm);
+    //printf("\n%d", imm);
 
     imm = imm>>2;
-    printf("\n%d", imm);
+    //printf("\n%d", imm);
 
     return imm;
 }
 
-void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas) {
+void salvaASM(instrucao *memoria, int linhas, int *decodificado) {
     int pc = 0;
 
     arquivo = fopen("main.asm", "w");
 
     if (arquivo == NULL) {
-        printf("Erro ao criar arquivo\n");
+        printf("\nErro ao criar arquivo\n");
         return;
     }
 
@@ -673,22 +649,56 @@ void salvaASM(instrucao *memoria, sinaisUC *sinais, int linhas) {
     fprintf(arquivo, ".globl main\n");
     fprintf(arquivo, "\nmain:\n");
 
-    fclose(arquivo);
-
     while(pc < linhas){
+        if(*decodificado==0){
+            decodificaInst(&memoria[pc]);
+        }
 
-        // Decodifica
-        decodificaInst(&memoria[pc]);
+        switch(memoria[pc].opcode){
+            case 0: // opcode = 0000
 
-        arquivo=fopen("main.asm","a");
-        // Controle
-        unidadeControle(&memoria[pc], sinais);
-        fclose(arquivo);
+                if(memoria[pc].funct==0){
+                    fprintf(arquivo,"    add $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                }
+                else if((memoria)[pc].funct==2){
+                    fprintf(arquivo,"    sub $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                }
+                else if((memoria)[pc].funct==4){
+                    fprintf(arquivo,"    and $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                }
+                else if((memoria)[pc].funct==5){
+                    fprintf(arquivo,"    or $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                }
+                break;
+
+            case 2: // opcode = 0010 - J
+                fprintf(arquivo,"    j %d\n", (memoria)[pc].addr);
+
+                break;
+
+            case 4: // opcode = 0100 - Addi
+                fprintf(arquivo,"    addi $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+
+                break;
+
+            case 8: // opcode = 1000 - BEQ
+                fprintf(arquivo,"    beq $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+
+                break;
+
+            case 11: // opcode = 1011 - lw
+                fprintf(arquivo,"    lw $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+
+                break;
+
+            case 15: // opcode = 1111 - sw
+                fprintf(arquivo,"    sw $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+
+                break;
+        }
 
         pc++;
     }
-
-    arquivo = fopen("main.asm", "a");
 
     fprintf(arquivo, "\n    li $v0, 10\n");
     fprintf(arquivo, "    syscall\n");
@@ -702,7 +712,7 @@ void salvaDAT(int *memDados, int linhasMemDados){
     arquivo = fopen("dados.dat","w");
 
     if (arquivo == NULL) {
-        printf("Erro ao criar arquivo\n");
+        printf("\nErro ao criar arquivo\n");
         return;
     }
 
