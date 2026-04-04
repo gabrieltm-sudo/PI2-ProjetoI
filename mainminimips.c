@@ -91,7 +91,7 @@ void imprimeBancoRegistradores(int *reg);
 
 // EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
 void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg, int *memDados);
-int extensorBit(int8_t imm);
+int8_t extensorBit(int8_t imm);
 
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
@@ -286,7 +286,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
     fclose(arquivo);
 }
 
-int extensorBit(int8_t imm){
+int8_t extensorBit(int8_t imm){
     imm = imm<<2;
     //printf("\n%d", imm);
 
@@ -386,6 +386,7 @@ void decodificaInst(instrucao *instrucao){
         (*instrucao).rs = ((*instrucao).instrucao >> 9) &0x7; // pega os 3 bits do rs
         (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
         (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
+        (*instrucao).imm = extensorBit((*instrucao).imm);
         printf("\n[ Tipo I ] \n");
         printf("opcode: %d\n", (*instrucao).opcode);
         printf("rs: %d\n", (*instrucao).rs);
@@ -596,7 +597,7 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *me
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
 
     if((*sinais).UlaFonte==1){
-        operador2=extensorBit((*instrucao).imm); 
+        operador2=(*instrucao).imm; 
     }
 
     UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
