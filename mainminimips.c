@@ -33,6 +33,7 @@ typedef struct {
     uint8_t funct;
     int8_t imm;
     uint8_t addr;
+    int decodificado;
 } instrucao;
 
 /*Instruções:
@@ -58,11 +59,11 @@ End: 8 bits;
 
 // MENU / CONTROLE DO SISTEMA
 void imprimeSimulador(); // (não implementado)
-void salvaASM(instrucao *memoria, int linhas, int *decodificado);
+void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado);
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado);
+void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -108,9 +109,7 @@ void imprimeMemDados(int *memDados, int linhasMemDados);
 
 int main(){
     int pc = 0;
-    int esc;
     int opcao;
-    int decodificado=0;
     instrucao *memoria = NULL;
     sinaisUC sinais;
     int linhas=0, linhasMemDados=0;
@@ -179,7 +178,7 @@ int main(){
 
             case 5:
                 // Salvar .asm
-                salvaASM(memoria, linhas, &decodificado);
+                salvaASM(memoria, linhas);
                 break;
 
             case 6:
@@ -189,14 +188,12 @@ int main(){
 
             case 7:
                 //Executar programa (run)
-                esc = 0;
-                run(memoria, linhas, esc, bReg, &sinais, &pc, memDados, &decodificado);
+                run(memoria, linhas, bReg, &sinais, &pc, memDados);
                 break;
 
             case 8:
                 //Executa instrução (step)
-                esc = 1;
-                step(memoria, linhas, esc, bReg, &sinais, &pc, memDados, &decodificado);
+                step(memoria, linhas, bReg, &sinais, &pc, memDados);
                 break;
 
             case 9:
@@ -219,7 +216,7 @@ int main(){
     return 0;
 }
 
-int contaLinhas(char *arq){      // Analisar se é necessário - Atualmente é redundante.
+int contaLinhas(char *arq){
     arquivo = fopen(arq, "r");
     char ch;
     int count=0;
@@ -296,7 +293,7 @@ void programCounter(int *pc){
     }
 
 // RUN 
-void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado){
+void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
@@ -309,6 +306,8 @@ void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, i
         // Decodifica
         decodificaInst(&memoria[*pc]);
 
+        memoria[*pc].decodificado = 1;
+
         // Controle
         unidadeControle(&memoria[*pc], sinais);
 
@@ -318,11 +317,9 @@ void run(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, i
         //PC
         programCounter(pc);
     }
-
-    *decodificado=1;
 }
 
-void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, int *pc, int *memDados, int *decodificado){
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
@@ -334,6 +331,8 @@ void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, 
     // Decodifica
     decodificaInst(&memoria[*pc]);
 
+    memoria[*pc].decodificado = 1;
+
     // Controle
     unidadeControle(&memoria[*pc], sinais);
 
@@ -342,9 +341,6 @@ void step(instrucao *memoria, int linhas, int esc, int *bReg, sinaisUC *sinais, 
 
     //PC
     programCounter(pc);
-
-
-    *decodificado=1;
 }
 
 
@@ -633,7 +629,7 @@ int extensorBit(int8_t imm){
     return imm;
 }
 
-void salvaASM(instrucao *memoria, int linhas, int *decodificado) {
+void salvaASM(instrucao *memoria, int linhas) {
     int pc = 0;
 
     arquivo = fopen("main.asm", "w");
@@ -650,7 +646,7 @@ void salvaASM(instrucao *memoria, int linhas, int *decodificado) {
     fprintf(arquivo, "\nmain:\n");
 
     while(pc < linhas){
-        if(*decodificado==0){
+        if((memoria)[pc].decodificado==0){
             decodificaInst(&memoria[pc]);
         }
 
