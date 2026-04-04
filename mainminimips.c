@@ -286,11 +286,15 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
     fclose(arquivo);
 }
 
-// PC
-void programCounter(int *pc){
+int extensorBit(int8_t imm){
+    imm = imm<<2;
+    //printf("\n%d", imm);
 
-        (*pc)++;
-    }
+    imm = imm>>2;
+    //printf("\n%d", imm);
+
+    return imm;
+}
 
 // RUN 
 void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
@@ -343,6 +347,11 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
     programCounter(pc);
 }
 
+// PC
+void programCounter(int *pc){
+
+    (*pc)++;
+}
 
 // Decodificação
 void decodificaInst(instrucao *instrucao){
@@ -486,6 +495,52 @@ void imprimeBancoRegistradores(int *reg){
     printf("\n");
 }
 
+int ULA(int op1, int op2, int ulaOp, int *zero){
+    int resultado = 0;
+
+    switch(ulaOp){
+        case 0: // ADD
+            resultado = op1 + op2;
+            break;
+
+        case 2: // SUB
+            resultado = op1 - op2;
+            break;
+
+        case 4: // AND
+            resultado = op1 & op2;
+            break;
+
+        case 5: // OR
+            resultado = op1 | op2;
+            break;
+
+        case 6: //BEQ
+            resultado = op1 - op2;
+            break;
+
+        case 1: // ADDI
+            resultado = op1 + op2;
+            break;
+
+        case 3: // LW/SW
+            resultado = op1 + op2;
+            break;
+
+        default:
+            printf("\nOperação da ULA inválida!\n");
+    }
+
+    // flag zero
+    if(resultado == 0){
+        *zero = 1;
+    } else {
+        *zero = 0;
+    }
+
+    return resultado;
+}
+
 int *inicializaMemDados(){
     return calloc(256, sizeof(int));
 }
@@ -534,52 +589,6 @@ void imprimeMemDados(int *memDados, int linhasMemDados) {
     }
 }
 
-int ULA(int op1, int op2, int ulaOp, int *zero){
-    int resultado = 0;
-
-    switch(ulaOp){
-        case 0: // ADD
-            resultado = op1 + op2;
-            break;
-
-        case 2: // SUB
-            resultado = op1 - op2;
-            break;
-
-        case 4: // AND
-            resultado = op1 & op2;
-            break;
-
-        case 5: // OR
-            resultado = op1 | op2;
-            break;
-
-        case 6: //BEQ
-            resultado = op1 - op2;
-            break;
-
-        case 1: // ADDI
-            resultado = op1 + op2;
-            break;
-
-        case 3: // LW/SW
-            resultado = op1 + op2;
-            break;
-
-        default:
-            printf("\nOperação da ULA inválida!\n");
-    }
-
-    // flag zero
-    if(resultado == 0){
-        *zero = 1;
-    } else {
-        *zero = 0;
-    }
-
-    return resultado;
-}
-
 void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
 
@@ -617,16 +626,6 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *me
         printf("\nPulo condicional detectado\n");
     }
 
-}
-
-int extensorBit(int8_t imm){
-    imm = imm<<2;
-    //printf("\n%d", imm);
-
-    imm = imm>>2;
-    //printf("\n%d", imm);
-
-    return imm;
 }
 
 void salvaASM(instrucao *memoria, int linhas) {
