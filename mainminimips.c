@@ -5,6 +5,14 @@
 
 FILE *arquivo, *arquivoMemDados;
 
+// struct das estatísticas
+typedef struct{
+    int tipoI;
+    int tipoJ;
+    int tipoR;
+    int total;
+} estatInstrucoes;
+
 // struct de sinais
 typedef struct{
     uint8_t branch;
@@ -18,6 +26,7 @@ typedef struct{
     uint8_t ulaOp;
 }sinaisUC;
 
+// struct das instruções
 enum inst{
     tipoI, tipoJ, tipoR
 };
@@ -59,11 +68,12 @@ End: 8 bits;
 
 // MENU / CONTROLE DO SISTEMA
 void imprimeSimulador(); // (não implementado)
+void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados, int linhasMemDados);
 void voltaInstrucao();
-void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados);
+void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -89,7 +99,7 @@ void escreveRegistrador(int *reg, int rd, int valor, int EscReg);
 void imprimeBancoRegistradores(int *reg);
 
 
-// EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
+// EXECUÇÃO
 int executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg, int *memDados);
 int8_t extensorBit(int8_t imm);
 
@@ -110,9 +120,10 @@ void imprimeMemDados(int *memDados, int linhasMemDados);
 int main(){
     int pc = 0;
     int opcao;
-    instrucao *memoria = NULL;
+    estatInstrucoes estatInst = {0};
     sinaisUC sinais;
-    int linhas=0, linhasMemDados=0;
+    instrucao *memoria = NULL;
+    int linhas = 0, linhasMemDados = 0;
 
     int *bReg = inicializaBReg();
     int *memDados = inicializaMemDados();
@@ -121,13 +132,14 @@ int main(){
         printf("\nMenu:\n\n");
         printf("1. Carregar Memória de Instruções (.mem)\n");
         printf("2. Carregar Memória de Dados (.dat)\n");
-        printf("3. Imprimir Banco de Registradores\n");
-        printf("4. Imprimir todo o Simulador\n");
-        printf("5. Salvar .asm\n");
-        printf("6. Salvar .dat\n");
-        printf("7. Executa programa (run)\n");
-        printf("8. Executa uma instrução (step)\n");
-        printf("9. Volta uma instrução (back)\n");
+        printf("3. Imprimir memórias (instruções e dados)\n");
+        printf("4. Imprimir Banco de Registradores\n");
+        printf("5. Imprimir todo o Simulador\n");
+        printf("6. Salvar .asm\n");
+        printf("7. Salvar .dat\n");
+        printf("8. Executa programa (run)\n");
+        printf("9. Executa uma instrução (step)\n");
+        printf("10. Volta uma instrução (back)\n");
         printf("0. Sair\n\n");
         printf("Digite uma opção: ");
 
@@ -165,38 +177,41 @@ int main(){
                 break;
 
             case 3:
+                // Imprimir memórias (tanto instruções quando dados)
+                imprimeEstatistica(estatInst);
+                break;
+
+            case 4:
                 //Imprimir Banco de Registradores
                 imprimeBancoRegistradores(bReg);
                 break;
-
-
-            case 4:
+            case 5:
                 //Imprimir simulador
                 imprimeBancoRegistradores(bReg);
                 imprimeMemDados(memDados, linhasMemDados);
                 break;
 
-            case 5:
+            case 6:
                 // Salvar .asm
                 salvaASM(memoria, linhas);
                 break;
 
-            case 6:
+            case 7:
                 // Salvar .dat
                 salvaDAT(memDados,linhasMemDados);
                 break;
 
-            case 7:
-                //Executar programa (run)
-                run(memoria, linhas, bReg, &sinais, &pc, memDados);
-                break;
-
             case 8:
-                //Executa instrução (step)
-                step(memoria, linhas, bReg, &sinais, &pc, memDados);
+                //Executar programa (run)
+                run(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
                 break;
 
             case 9:
+                //Executa instrução (step)
+                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
+                break;
+
+            case 10:
                 //Voltar instrução (back)
                 break;
 
@@ -297,7 +312,7 @@ int8_t extensorBit(int8_t imm){
 }
 
 // RUN 
-void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
+void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
@@ -311,6 +326,18 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
         decodificaInst(&memoria[*pc]);
 
         memoria[*pc].decodificado = 1;
+        // Contabiliza estatística
+        switch(memoria[*pc].tipoInst){
+            case 0:
+                (*estatInst).tipoI++;
+                break;
+            case 1:
+                (*estatInst).tipoJ++;
+                break;
+            case 2:
+                (*estatInst).tipoR++;
+                break;
+        }
 
         // Controle
         unidadeControle(&memoria[*pc], sinais);
@@ -319,10 +346,12 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
         int zero = executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
 
         programCounter(pc, sinais, &memoria[*pc], zero);
+
+        (*estatInst).total++;
     }
 }
 
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados){
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
@@ -335,7 +364,18 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
     decodificaInst(&memoria[*pc]);
 
     memoria[*pc].decodificado = 1;
-
+    // Contabiliza estatística
+    switch(memoria[*pc].tipoInst){
+        case 0:
+            (*estatInst).tipoI++;
+            break;
+        case 1:
+            (*estatInst).tipoJ++;
+            break;
+        case 2:
+            (*estatInst).tipoR++;
+            break;
+    }
     // Controle
     unidadeControle(&memoria[*pc], sinais);
 
@@ -344,6 +384,8 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
 
     //PC
     programCounter(pc, sinais, &memoria[*pc], zero);
+
+    (*estatInst).total++;
 }
 
 // PC
@@ -463,7 +505,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).UlaFonte = 1;
             (*sinais).ulaOp = 3;
             (*sinais).EscMem = 0;
-            (*sinais).MemParaReg = 1;
+            (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
             (*sinais).branch = 0;
             
@@ -602,11 +644,13 @@ void imprimeMemDados(int *memDados, int linhasMemDados) {
 }
 
 int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
-    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
+    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0, valorSW; // passar para uint8_t aqui e nas funções
 
 
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
-
+    
+    valorSW = operador2;
+    
     if((*sinais).UlaFonte==1){
         operador2=(*instrucao).imm; 
     }
@@ -614,13 +658,15 @@ int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *mem
     UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
 
     if((*sinais).EscMem==1){
-        escreveMemDados(memDados, UlaResultado, (*instrucao).rt);
+        escreveMemDados(memDados, UlaResultado, valorSW);
+        printf("\nSW: Valor %d guardado no endereço %d\n", valorSW, UlaResultado);
     }
 
     if((*sinais).MemParaReg==1){
         dadoFinal = UlaResultado;
-    }else{
+    }else if((*sinais).EscReg==1){
         dadoFinal = retornaMemoria(memDados, UlaResultado);
+        printf("\nLW: Valor %d lido do endereço %d\n", dadoFinal, UlaResultado);
     }
     
     if((*sinais).RegDst==1){
@@ -730,4 +776,12 @@ void salvaDAT(int *memDados, int linhasMemDados){
     fclose(arquivo);
 
     printf("\nArquivo 'dados.dat' salvo!\n");
+}
+
+void imprimeEstatistica(estatInstrucoes estatInst){
+    printf("\n\nEstatísticas de instruções: \n");
+    printf("Total de instruções executadas: %d\n", estatInst.total);
+    printf("Total de instruções do tipo R: %d\n", estatInst.tipoR);
+    printf("Total de instruções do tipo I: %d\n", estatInst.tipoI);
+    printf("Total de instruções do tipo J: %d\n", estatInst.tipoJ);
 }
