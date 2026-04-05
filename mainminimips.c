@@ -71,7 +71,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas);
 
 
 // PROGRAM COUNTER (PC) / BUSCA
-void programCounter(int *pc);
+void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero);
 
 
 // DECODIFICAÇÃO
@@ -90,7 +90,7 @@ void imprimeBancoRegistradores(int *reg);
 
 
 // EXECUÇÃO (AINDA NÃO IMPLEMENTADA)
-void executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg, int *memDados);
+int executaInstrucao(instrucao *instrucao, sinaisUC *sinais, int *bReg, int *memDados);
 int8_t extensorBit(int8_t imm);
 
 
@@ -316,10 +316,9 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
         unidadeControle(&memoria[*pc], sinais);
 
         // Executa
-        executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
+        int zero = executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
 
-        //PC
-        programCounter(pc);
+        programCounter(pc, sinais, &memoria[*pc], zero);
     }
 }
 
@@ -341,18 +340,30 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
     unidadeControle(&memoria[*pc], sinais);
 
     // Executa
-    executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
+    int zero = executaInstrucao(&memoria[*pc], sinais, bReg, memDados);
 
     //PC
-    programCounter(pc);
+    programCounter(pc, sinais, &memoria[*pc], zero);
 }
 
 // PC
-void programCounter(int *pc){
+void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero){
+    
+    // JUMP
+    if((*sinais).jump == 1){
+        *pc = (*instrucao).addr;
+        return;
+    }
 
+    // BRANCH 
+    if((*sinais).branch == 1 && zero == 1){
+        *pc = *pc + (*instrucao).imm + 1;
+        return;
+    }
+
+    // execução normal
     (*pc)++;
 }
-
 // Decodificação
 void decodificaInst(instrucao *instrucao){
 
@@ -590,7 +601,7 @@ void imprimeMemDados(int *memDados, int linhasMemDados) {
     }
 }
 
-void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
+int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0;; // passar para uint8_t aqui e nas funções
 
 
@@ -626,7 +637,7 @@ void executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *me
     if((*sinais).branch==1 && zero == 1){ 
         printf("\nPulo condicional detectado\n");
     }
-
+    return zero;
 }
 
 void salvaASM(instrucao *memoria, int linhas) {
