@@ -70,7 +70,7 @@ End: 8 bits;
 void imprimeSimulador(); // (não implementado)
 void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
-void salvaDAT(int *memDados, int linhasMemDados);
+void salvaDAT(int *memDados);
 void voltaInstrucao();
 void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
 void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
@@ -110,10 +110,10 @@ int ULA(int op1, int op2, int ulaOp, int *zero);
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
 int contaMemDados(char *arqMem);
-void lerMemDados(char *arqMem, int linhasMemDados, int **memDados);
+void lerMemDados(char *arqMem, int **memDados);
 void escreveMemDados(int *memDados, int endereco, int valor);
 int retornaMemoria(int *memDados, int enderecoULA);
-void imprimeMemDados(int *memDados, int linhasMemDados);
+void imprimeMemDados(int *memDados);
 
 // -------------------------------------------------------------------------
 
@@ -123,7 +123,7 @@ int main(){
     estatInstrucoes estatInst = {0};
     sinaisUC sinais;
     instrucao *memoria = NULL;
-    int linhas = 0, linhasMemDados = 0;
+    int linhas = 0;
 
     int *bReg = inicializaBReg();
     int *memDados = inicializaMemDados();
@@ -169,10 +169,7 @@ int main(){
                 fgets(arqMem, sizeof(arqMem), stdin);
                 arqMem[strcspn(arqMem, "\n")] = '\0';
 
-                linhasMemDados = contaMemDados(arqMem);
-                printf("\n%d Dados encontrados.\n", linhasMemDados);
-
-                lerMemDados(arqMem, linhasMemDados, &memDados);
+                lerMemDados(arqMem, &memDados);
 
                 break;
 
@@ -188,7 +185,7 @@ int main(){
             case 5:
                 //Imprimir simulador
                 imprimeBancoRegistradores(bReg);
-                imprimeMemDados(memDados, linhasMemDados);
+                imprimeMemDados(memDados);
                 break;
 
             case 6:
@@ -198,7 +195,7 @@ int main(){
 
             case 7:
                 // Salvar .dat
-                salvaDAT(memDados,linhasMemDados);
+                salvaDAT(memDados);
                 break;
 
             case 8:
@@ -599,7 +596,7 @@ int *inicializaMemDados(){
     return calloc(256, sizeof(int));
 }
 
-void lerMemDados(char *arqMem, int linhasMemDados, int **memDados) {
+void lerMemDados(char *arqMem, int **memDados) {
     int i=0;
 
     if (*memDados == NULL) {
@@ -613,11 +610,11 @@ void lerMemDados(char *arqMem, int linhasMemDados, int **memDados) {
         return;
     }
 
-    for(i = 0; i < linhasMemDados; i++) {
+    for(i = 0; i < 256; i++) {
         fscanf(arquivoMemDados, "%d", &(*memDados)[i]);
     }
 
-    imprimeMemDados(*memDados, linhasMemDados);
+    imprimeMemDados(*memDados);
 
     fclose(arquivoMemDados);
 }
@@ -634,11 +631,11 @@ int retornaMemoria(int *memDados, int enderecoULA) {
     return memDados[enderecoULA];
 }
 
-void imprimeMemDados(int *memDados, int linhasMemDados) {
+void imprimeMemDados(int *memDados) {
     printf("\nMemória de Dados:\n\n");
 
     int i=0;
-    for(i=0;i<linhasMemDados;i++){
+    for(i=0;i<256;i++){
         printf("Posição de Memória %d: %d\n",i,(memDados)[i]);
     }
 }
@@ -761,7 +758,7 @@ void salvaASM(instrucao *memoria, int linhas) {
     printf("\nArquivo 'main.asm' salvo!\n");
 }
 
-void salvaDAT(int *memDados, int linhasMemDados){
+void salvaDAT(int *memDados){
     arquivo = fopen("dados.dat","w");
 
     if (arquivo == NULL) {
@@ -769,7 +766,7 @@ void salvaDAT(int *memDados, int linhasMemDados){
         return;
     }
 
-    for(int i=0;i<linhasMemDados;i++){
+    for(int i=0;i<256;i++){
         fprintf(arquivo,"%d\n",memDados[i]);
     }
 
