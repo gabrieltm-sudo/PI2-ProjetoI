@@ -300,7 +300,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 
 int8_t extensorBit(int8_t imm){
     imm = imm<<2;
-    //printf("\n%d", imm);
+    //printf("\n%d", imm);      // 111111 = -1  <- 00111111 << 2 -> 111111100 >> 2 -> 11111111
 
     imm = imm>>2;
     //printf("\n%d", imm);
@@ -484,11 +484,11 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 
             break;
 
-        case 8: // opcode = 1000 - BEQ
+        case 8: // opcode = 1000 - BEQ 
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 0;
             (*sinais).UlaFonte = 0;
-            (*sinais).ulaOp = 6; // 110
+            (*sinais).ulaOp = 2; // SUB
             (*sinais).EscMem = 0;
             (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
@@ -496,11 +496,11 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
 
             break;
 
-        case 11: // opcode = 1011 - lw
+        case 11: // opcode = 1011 - lw // add
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 1;
             (*sinais).UlaFonte = 1;
-            (*sinais).ulaOp = 3;
+            (*sinais).ulaOp = 0; // add
             (*sinais).EscMem = 0;
             (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
@@ -512,7 +512,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 0;
             (*sinais).UlaFonte = 1;
-            (*sinais).ulaOp = 5; // (?)
+            (*sinais).ulaOp = 0; // add
             (*sinais).EscMem = 1;
             (*sinais).MemParaReg = 0;
             (*sinais).jump = 0;
@@ -550,11 +550,11 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
     int resultado = 0;
 
     switch(ulaOp){
-        case 0: // ADD
+        case 0: // ADD, LW/SW
             resultado = op1 + op2;
             break;
 
-        case 2: // SUB
+        case 2: // SUB, BEQ
             resultado = op1 - op2;
             break;
 
@@ -566,18 +566,10 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
             resultado = op1 | op2;
             break;
 
-        case 6: //BEQ
-            resultado = op1 - op2;
-            break;
-
         case 1: // ADDI
             resultado = op1 + op2;
             break;
-
-        case 3: // LW/SW
-            resultado = op1 + op2;
-            break;
-
+            
         default:
             printf("\nOperação da ULA inválida!\n");
     }
