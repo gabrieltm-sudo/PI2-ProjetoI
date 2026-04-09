@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <inttypes.h>
+
+#define MAX_HIST 1000
 
 FILE *arquivo, *arquivoMemDados;
 
@@ -46,6 +49,17 @@ typedef struct {
     int decodificado;
 } instrucao;
 
+typedef struct {
+    int pc;
+    int memDados[256];
+    int bReg[8];
+} estado;
+
+typedef struct {
+    estado estados[MAX_HIST];
+    int topo;
+} historico;
+
 /*Instruções:
 Tipo R:
 opcode: 4 bits (0000);
@@ -72,14 +86,13 @@ void imprimeSimulador(); // (não implementado)
 void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados);
-void voltaInstrucao();
 void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst, historico *hist);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
 void lerMem(char *arq, instrucao **memoria, int linhas);
-void imprimeMemInstr(instrucao *memoria);
+void imprimeMemorias(instrucao *memoria, int *memDados);
 
 // PROGRAM COUNTER (PC) / BUSCA
 void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero);
@@ -114,17 +127,24 @@ int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int **memDados);
 void escreveMemDados(int *memDados, int endereco, int valor);
 int retornaMemoria(int *memDados, int enderecoULA);
-void imprimeMemDados(int *memDados);
 
-// -------------------------------------------------------------------------
+// HISTÓRICO
+void salvaEstado(historico *hist, int pc, int *memDados, int *bReg);
+void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg);
+
+//----------------------------------------------------------------------
 
 int main(){
-    int pc = 0;
-    int opcao;
+    int pc = 0, opcao, linhas = 0;
+
     estatInstrucoes estatInst = {0};
+
     sinaisUC sinais;
+
     instrucao *memoria = NULL;
-    int linhas = 0;
+
+    historico hist;
+    hist.topo = 0;
 
     int *bReg = inicializaBReg();
     int *memDados = inicializaMemDados();
@@ -157,7 +177,7 @@ int main(){
                 arq[strcspn(arq, "\n")] = '\0';
 
                 linhas = contaLinhas(arq);
-                printf("\n%d Instruções.\n", linhas);
+                printf("\n%d Instruções carregadas!\n", linhas);
 
                 lerMem(arq, &memoria, linhas);
                 break;
@@ -176,7 +196,8 @@ int main(){
 
             case 3:
                 // Imprimir memórias (tanto instruções quando dados)
-                imprimeMemDados(memDados);
+                imprimeMemorias(memoria,memDados);
+
                 break;
 
             case 4:
@@ -187,7 +208,7 @@ int main(){
                 //Imprimir simulador
                 imprimeEstatistica(estatInst);
                 imprimeBancoRegistradores(bReg);
-                imprimeMemDados(memDados);
+                imprimeMemorias(memoria,memDados);
                 break;
 
             case 6:
@@ -207,11 +228,13 @@ int main(){
 
             case 9:
                 //Executa instrução (step)
-                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
+                salvaEstado(&hist, pc, memDados, bReg);
+                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst, &hist);
                 break;
 
             case 10:
                 //Voltar instrução (back)
+                voltaInstrucao(&hist, &pc, memDados, bReg);
                 break;
 
             case 0:
@@ -274,7 +297,7 @@ int contaMemDados(char *arqMem){
 void lerMem(char *arq, instrucao **memoria, int linhas){
     *memoria = calloc(256, sizeof(instrucao));
     if(memoria == NULL){
-    printf("\nMemoria nao carregada!\n");
+    printf("\nMemoria não carregada!\n");
     return;
 }
     arquivo = fopen(arq, "r");
@@ -286,18 +309,31 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
         return;
     }
 
-    printf("\nMemória de Instruções\n\n");
-
-    while(i < linhas && fscanf(arquivo, "%16s", mem) != EOF){
-        
-        strcpy((*memoria)[i].mem, mem);
-        printf("%dª memória: %s\n", i+1, (*memoria)[i].mem);
-        
-        (*memoria)[i].instrucao = strtoul(mem, NULL, 2);    // Transforma a string em uint16_t
-        i++;
+    for(i=0;i<256;i++){
+        if(linhas && fscanf(arquivo, "%16s", mem) != EOF){
+            strcpy((*memoria)[i].mem, mem);
+        } else {
+            strcpy((*memoria)[i].mem, "0000000000000000");
+        }
+        (*memoria)[i].instrucao = strtoul(mem, NULL, 2);
     }
     
     fclose(arquivo);
+}
+
+void imprimeMemorias(instrucao *memoria, int *memDados){
+    printf("________________________________________\n");
+    printf(" Posição  |    Instruções    |   Dados    \n");
+    printf("__________|__________________|__________\n");
+    for(int i=0;i<256;i++){
+        if(memDados[i]<0){
+            printf("   %.3d    | %.16s |     %d   \n",i, memoria[i].mem,memDados[i]);
+        } else {
+            printf("   %.3d    | %.16s |     %d    \n",i, memoria[i].mem,memDados[i]);
+        }
+        printf("__________|__________________|__________\n");
+    }
+    printf("\n");
 }
 
 int8_t extensorBit(int8_t imm){
@@ -350,7 +386,7 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
     }
 }
 
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst, historico *hist){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
@@ -540,10 +576,15 @@ void escreveRegistrador(int *reg, int rd, int valor, int EscReg){
 }
 
 void imprimeBancoRegistradores(int *reg){
-    printf("\nBanco de Registradores:\n\n");
+    printf("________________________\n");
+    printf(" Banco de Registradores \n");
+    printf("________________________\n");
+    printf(" Registrador |   Valor  \n");
+    printf("________________________\n");
 
     for(int i=0;i<8;i++){
-        printf("Registrador %d: %d\n",i, reg[i]);
+        printf("      %d      |     %d    \n",i, reg[i]);
+        printf("_____________|__________\n");
     }
     printf("\n");
 }
@@ -608,7 +649,7 @@ void lerMemDados(char *arqMem, int **memDados) {
         fscanf(arquivoMemDados, "%d", &(*memDados)[i]);
     }
 
-    imprimeMemDados(*memDados);
+    printf("\nMemória carregada!\n");
 
     fclose(arquivoMemDados);
 }
@@ -810,9 +851,52 @@ void salvaDAT(int *memDados){
 }
 
 void imprimeEstatistica(estatInstrucoes estatInst){
-    printf("\n\nEstatísticas de instruções: \n");
-    printf("Total de instruções executadas: %d\n", estatInst.total);
-    printf("Total de instruções do tipo R: %d\n", estatInst.tipoR);
-    printf("Total de instruções do tipo I: %d\n", estatInst.tipoI);
-    printf("Total de instruções do tipo J: %d\n", estatInst.tipoJ);
+    printf("_________________________________________\n");
+    printf("       Estatísticas de instruções        \n");
+    printf("_________________________________________\n");
+    printf("  Total de instruções executadas  |  %d  \n", estatInst.total);
+    printf("_________________________________________\n");
+    printf("              Tipo R:             |  %d  \n", estatInst.tipoR);
+    printf("_________________________________________\n");
+    printf("              Tipo I:             |  %d  \n", estatInst.tipoI);
+    printf("_________________________________________\n");
+    printf("              Tipo J:             |  %d  \n", estatInst.tipoJ);
+    printf("_________________________________________\n\n");
+}
+
+void salvaEstado(historico *hist, int pc, int *memDados, int *bReg){
+    if(hist->topo >= MAX_HIST) return;
+
+    estado *e = &hist->estados[hist->topo];
+
+    e->pc = pc;
+
+    for(int i=0;i<256;i++)
+        e->memDados[i] = memDados[i];
+
+    for(int i=0;i<8;i++)
+        e->bReg[i] = bReg[i];
+
+    hist->topo++;
+}
+
+void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg){
+    if(hist->topo <= 0){
+        printf("\nSem histórico!\n");
+        return;
+    }
+
+    hist->topo--;
+
+    estado *e = &hist->estados[hist->topo];
+
+    *pc = e->pc;
+
+    for(int i=0;i<256;i++)
+        memDados[i] = e->memDados[i];
+
+    for(int i=0;i<8;i++)
+        bReg[i] = e->bReg[i];
+
+    printf("\nVoltou uma instrução!\n");
 }
