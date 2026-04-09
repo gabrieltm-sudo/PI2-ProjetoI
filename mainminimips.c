@@ -666,18 +666,8 @@ int retornaMemoria(int *memDados, int enderecoULA) {
     return memDados[enderecoULA];
 }
 
-void imprimeMemDados(int *memDados) {
-    printf("\nMemória de Dados:\n\n");
-
-    int i=0;
-    for(i=0;i<256;i++){
-        printf("Posição de Memória %d: %d\n",i,(memDados)[i]);
-    }
-}
-
 int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
     int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0, valorSW; // passar para uint8_t aqui e nas funções
-
 
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
     
