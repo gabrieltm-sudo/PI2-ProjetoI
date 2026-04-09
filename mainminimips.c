@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 
 FILE *arquivo, *arquivoMemDados;
 
@@ -78,7 +79,7 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
 // MEMÓRIA
 int contaLinhas(char *arq);
 void lerMem(char *arq, instrucao **memoria, int linhas);
-
+void imprimeMemInstr(instrucao *memoria);
 
 // PROGRAM COUNTER (PC) / BUSCA
 void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero);
@@ -175,7 +176,7 @@ int main(){
 
             case 3:
                 // Imprimir memórias (tanto instruções quando dados)
-                imprimeEstatistica(estatInst);
+                imprimeMemDados(memDados);
                 break;
 
             case 4:
@@ -184,6 +185,7 @@ int main(){
                 break;
             case 5:
                 //Imprimir simulador
+                imprimeEstatistica(estatInst);
                 imprimeBancoRegistradores(bReg);
                 imprimeMemDados(memDados);
                 break;
@@ -677,19 +679,37 @@ int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *mem
 
 void salvaASM(instrucao *memoria, int linhas) {
     int pc = 0;
+    char nomeASM[50]={0}, nome[20], extensao[] = ".asm", resposta;
 
-    arquivo = fopen("main.asm", "w");
+    printf("\nDigite o nome do arquivo que deseja salvar (.asm): ");
+    fgets(nome, sizeof(nome),stdin);
+    nome[strcspn(nome,"\n")]='\0';
+    int indice=1;
+
+    strcat(nomeASM,nome);
+    strcat(nomeASM,extensao);
+
+    // Verifica se o arquivo existe
+    while (access(nomeASM, F_OK) != -1) {
+        printf("\nJá existe um arquivo com o nome %s, deseja sobrescrever? (s/n): ", nomeASM);
+        scanf(" %c", &resposta);
+
+        if (resposta == 's' || resposta == 'S') {
+            break;
+        } else if (resposta == 'n' || resposta == 'N') {
+            snprintf(nomeASM, sizeof(nomeASM), "%s_%d%s", nome, indice, extensao);
+            indice++;
+        } else {
+            printf("\nOpção inválida. Tente novamente.\n");
+        }
+    }
+
+    arquivo = fopen(nomeASM, "w");
 
     if (arquivo == NULL) {
         printf("\nErro ao criar arquivo\n");
         return;
     }
-
-    fprintf(arquivo, ".data\n\n");
-
-    fprintf(arquivo, ".text\n");
-    fprintf(arquivo, ".globl main\n");
-    fprintf(arquivo, "\nmain:\n");
 
     while(pc < linhas){
         if((memoria)[pc].decodificado==0){
@@ -700,41 +720,41 @@ void salvaASM(instrucao *memoria, int linhas) {
             case 0: // opcode = 0000
 
                 if(memoria[pc].funct==0){
-                    fprintf(arquivo,"    add $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                    fprintf(arquivo,"add $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
                 }
                 else if((memoria)[pc].funct==2){
-                    fprintf(arquivo,"    sub $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                    fprintf(arquivo,"sub $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
                 }
                 else if((memoria)[pc].funct==4){
-                    fprintf(arquivo,"    and $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                    fprintf(arquivo,"and $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
                 }
                 else if((memoria)[pc].funct==5){
-                    fprintf(arquivo,"    or $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+                    fprintf(arquivo,"or $%d, $%d, $%d\n", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
                 }
                 break;
 
             case 2: // opcode = 0010 - J
-                fprintf(arquivo,"    j %d\n", (memoria)[pc].addr);
+                fprintf(arquivo,"j %d\n", (memoria)[pc].addr);
 
                 break;
 
             case 4: // opcode = 0100 - Addi
-                fprintf(arquivo,"    addi $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+                fprintf(arquivo,"addi $%d, $%d, %d\n", (memoria)[pc].rt, (memoria)[pc].rs, (memoria)[pc].imm);
 
                 break;
 
             case 8: // opcode = 1000 - BEQ
-                fprintf(arquivo,"    beq $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+                fprintf(arquivo,"beq $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
 
                 break;
 
             case 11: // opcode = 1011 - lw
-                fprintf(arquivo,"    lw $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+                fprintf(arquivo,"lw $%d, %d($%d)\n", (memoria)[pc].rt, (memoria)[pc].imm, (memoria)[pc].rs);
 
                 break;
 
             case 15: // opcode = 1111 - sw
-                fprintf(arquivo,"    sw $%d, $%d, %d\n", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+                fprintf(arquivo,"sw $%d, %d($%d)\n", (memoria)[pc].rt, (memoria)[pc].imm, (memoria)[pc].rs);
 
                 break;
         }
@@ -742,16 +762,38 @@ void salvaASM(instrucao *memoria, int linhas) {
         pc++;
     }
 
-    fprintf(arquivo, "\n    li $v0, 10\n");
-    fprintf(arquivo, "    syscall\n");
-
     fclose(arquivo);
 
-    printf("\nArquivo 'main.asm' salvo!\n");
+    printf("\nArquivo '%s' salvo!\n",nomeASM);
 }
 
 void salvaDAT(int *memDados){
-    arquivo = fopen("dados.dat","w");
+    char nomeDAT[50]={0}, nome[20], extensao[] = ".dat", resposta;
+
+    printf("\nDigite o nome do arquivo que deseja salvar (.dat): ");
+    fgets(nome, sizeof(nome),stdin);
+    nome[strcspn(nome,"\n")]='\0';
+    int indice=1;
+
+    strcat(nomeDAT,nome);
+    strcat(nomeDAT,extensao);
+
+    // Verifica se o arquivo existe
+    while (access(nomeDAT, F_OK) != -1) {
+        printf("\nJá existe um arquivo com o nome %s, deseja sobrescrever? (s/n): ", nomeDAT);
+        scanf(" %c", &resposta);
+
+        if (resposta == 's' || resposta == 'S') {
+            break;
+        } else if (resposta == 'n' || resposta == 'N') {
+            snprintf(nomeDAT, sizeof(nomeDAT), "%s_%d%s", nome, indice, extensao);
+            indice++;
+        } else {
+            printf("\nOpção inválida. Tente novamente.\n");
+        }
+    }
+
+    arquivo = fopen(nomeDAT,"w");
 
     if (arquivo == NULL) {
         printf("\nErro ao criar arquivo\n");
@@ -764,7 +806,7 @@ void salvaDAT(int *memDados){
 
     fclose(arquivo);
 
-    printf("\nArquivo 'dados.dat' salvo!\n");
+    printf("\nArquivo '%s' salvo!\n",nomeDAT);
 }
 
 void imprimeEstatistica(estatInstrucoes estatInst){
