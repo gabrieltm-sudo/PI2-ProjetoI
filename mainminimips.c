@@ -87,7 +87,7 @@ void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados);
 void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst, historico *hist);
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -229,7 +229,7 @@ int main(){
             case 9:
                 //Executa instrução (step)
                 salvaEstado(&hist, pc, memDados, bReg);
-                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst, &hist);
+                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
                 break;
 
             case 10:
@@ -386,7 +386,7 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
     }
 }
 
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst, historico *hist){
+void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
 
     if(*pc >= linhas){
         printf("\nFim das instruções!\n");
