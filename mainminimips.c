@@ -440,6 +440,7 @@ void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero){
 
     // execução normal
     (*pc)++;
+    printf("\n[ PC+1 ]\nPC atual: %d!\n", *pc);
 }
 // Decodificação
 void decodificaInst(instrucao *instrucao){
@@ -889,4 +890,5 @@ void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg){
         bReg[i] = e->bReg[i];
 
     printf("\nVoltou uma instrução!\n");
+    printf("PC atual: %d!\n", *pc);
 }
