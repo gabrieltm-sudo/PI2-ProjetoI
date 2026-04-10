@@ -515,7 +515,7 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais){
             (*sinais).RegDst = 0;
             (*sinais).EscReg = 1;
             (*sinais).UlaFonte = 1;
-            (*sinais).ulaOp = 1;
+            (*sinais).ulaOp = 0;
             (*sinais).EscMem = 0;
             (*sinais).MemParaReg = 1;
             (*sinais).jump = 0;
@@ -594,7 +594,7 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
     int resultado = 0;
 
     switch(ulaOp){
-        case 0: // ADD, LW/SW
+        case 0: // ADD, LW/SW , ADDI
             resultado = op1 + op2;
             break;
 
@@ -608,10 +608,6 @@ int ULA(int op1, int op2, int ulaOp, int *zero){
 
         case 5: // OR
             resultado = op1 | op2;
-            break;
-
-        case 1: // ADDI
-            resultado = op1 + op2;
             break;
             
         default:
