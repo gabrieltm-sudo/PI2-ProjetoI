@@ -82,7 +82,6 @@ End: 8 bits;
 // ------------------------------ PROTÓTIPOS -------------------------------
 
 // MENU / CONTROLE DO SISTEMA
-void imprimeSimulador(); // (não implementado)
 void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados);
