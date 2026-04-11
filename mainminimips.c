@@ -15,6 +15,7 @@ typedef struct{
     int tipoJ;
     int tipoR;
     int total;
+    int add, sub, and, or, addi, beq, lw, sw, j;
 } estatInstrucoes;
 
 // struct de sinais
@@ -82,7 +83,6 @@ End: 8 bits;
 // ------------------------------ PROTÓTIPOS -------------------------------
 
 // MENU / CONTROLE DO SISTEMA
-void imprimeSimulador(); // (não implementado)
 void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados);
@@ -108,8 +108,8 @@ void unidadeControle(instrucao *instrucao, sinaisUC *sinais);
 
 // BANCO DE REGISTRADORES (BREG)
 int *inicializaBReg();
-void lerRegistradores(int *reg, int rs, int rt, int *valRs, int *valRt);
-void escreveRegistrador(int *reg, int rd, int valor, int EscReg);
+void lerRegistradores(int *reg, int8_t rs, int8_t rt, int8_t *valRs, int8_t *valRt);
+void escreveRegistrador(int *reg, int8_t rd, int8_t valor, int EscReg);
 void imprimeBancoRegistradores(int *reg);
 
 
@@ -119,14 +119,14 @@ int8_t extensorBit(int8_t imm);
 
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
-int ULA(int op1, int op2, int ulaOp, int *zero);
+int8_t ULA(int op1, int op2, int ulaOp, int *zero);
 
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
 int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int **memDados);
-void escreveMemDados(int *memDados, int endereco, int valor);
-int retornaMemoria(int *memDados, int enderecoULA);
+void escreveMemDados(int *memDados, int8_t endereco, int8_t valor);
+int8_t retornaMemoria(int *memDados, int8_t enderecoULA);
 
 // HISTÓRICO
 void salvaEstado(historico *hist, int pc, int *memDados, int *bReg);
@@ -206,9 +206,27 @@ int main(){
                 break;
             case 5:
                 //Imprimir simulador
-                imprimeEstatistica(estatInst);
-                imprimeBancoRegistradores(bReg);
-                imprimeMemorias(memoria,memDados);
+                printf("\nImpressão do simulador:\n");
+                do{
+                    printf("\n1. Banco de Registradores\n2. Memórias (Dados ou Instruções)\n3. Estatísticas das Instruções)\n");
+                    printf("\nSelecione uma das opções acima: ");
+                    scanf("%d", &opcao);
+                    switch(opcao){
+                        case 1:
+                            imprimeBancoRegistradores(bReg);
+                            break;
+                        case 2:
+                            imprimeMemorias(memoria,memDados);
+                            break;
+                        case 3:
+                            imprimeEstatistica(estatInst);
+                            break;
+                        default:
+                            printf("Opção inválida! Por favor selecione uma das opções disponíveis.\n");
+                            break;
+                    }
+                }while(opcao<1 || opcao>3);
+
                 break;
 
             case 6:
@@ -242,6 +260,7 @@ int main(){
                 free(bReg);
                 free(memoria);
                 free(memDados);
+                printf("\nSaindo do programa...\n");
                 return 0;
 
             default:
@@ -322,6 +341,30 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 }
 
 void imprimeMemorias(instrucao *memoria, int *memDados){
+    int opt;
+    do{
+        printf("\n1. Memória de instruções\n2. Memória de dados\n");
+        printf("\nSelecione uma das opções acima: ");
+        scanf("%d", &opt);
+
+        switch(opt){
+            case 1:
+                printf("_________________________\n");
+                printf(" Posição  |  Instruções  \n");
+                printf("__________|______________\n");
+                printf("\n\n");
+                break;
+            case 2:
+                printf("_________________________\n");
+                printf(" Posição  |  Instruções  \n");
+                printf("__________|______________\n");
+                printf("\n\n");
+                break;
+            default:
+                printf("Opção inválida! Por favor, selecione uma das opções disponíveis.\n");
+        }
+    }while(opt<1 || opt>2);
+
     printf("________________________________________\n");
     printf(" Posição  |    Instruções    |   Dados    \n");
     printf("__________|__________________|__________\n");
@@ -364,12 +407,41 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
         // Contabiliza estatística
         switch(memoria[*pc].tipoInst){
             case 0:
+                switch(memoria[*pc].opcode){
+                    case 4:
+                        (*estatInst).addi++;
+                        break;
+                    case 8:
+                        (*estatInst).beq++;
+                        break;
+                    case 11:
+                        (*estatInst).lw++;
+                        break;
+                    case 15:
+                        (*estatInst).sw++;
+                        break;
+                }
                 (*estatInst).tipoI++;
                 break;
             case 1:
+                (*estatInst).j++;
                 (*estatInst).tipoJ++;
                 break;
             case 2:
+            switch(memoria[*pc].funct){
+                case 0:
+                        (*estatInst).add++;
+                        break;
+                    case 2:
+                        (*estatInst).sub++;
+                        break;
+                    case 4:
+                        (*estatInst).and++;
+                        break;
+                    case 5:
+                        (*estatInst).or++;
+                        break;
+                }
                 (*estatInst).tipoR++;
                 break;
         }
@@ -402,12 +474,41 @@ void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, 
     // Contabiliza estatística
     switch(memoria[*pc].tipoInst){
         case 0:
+            switch(memoria[*pc].opcode){
+                case 4:
+                    (*estatInst).addi++;
+                    break;
+                case 8:
+                    (*estatInst).beq++;
+                    break;
+                case 11:
+                    (*estatInst).lw++;
+                    break;
+                case 15:
+                    (*estatInst).sw++;
+                    break;
+            }
             (*estatInst).tipoI++;
             break;
         case 1:
+            (*estatInst).j++;
             (*estatInst).tipoJ++;
             break;
         case 2:
+        switch(memoria[*pc].funct){
+            case 0:
+                    (*estatInst).add++;
+                    break;
+                case 2:
+                    (*estatInst).sub++;
+                    break;
+                case 4:
+                    (*estatInst).and++;
+                    break;
+                case 5:
+                    (*estatInst).or++;
+                    break;
+            }
             (*estatInst).tipoR++;
             break;
     }
@@ -565,12 +666,12 @@ int *inicializaBReg(){
     return calloc(8, sizeof(int));
 }
 
-void lerRegistradores(int *reg, int rs, int rt, int *valRs, int *valRt){
+void lerRegistradores(int *reg, int8_t rs, int8_t rt, int8_t *valRs, int8_t *valRt){
     *valRs = reg[rs];
     *valRt = reg[rt];
 }
 
-void escreveRegistrador(int *reg, int rd, int valor, int EscReg){
+void escreveRegistrador(int *reg, int8_t rd, int8_t valor, int EscReg){
     if(EscReg){
         reg[rd] = valor;
     }
@@ -590,7 +691,7 @@ void imprimeBancoRegistradores(int *reg){
     printf("\n");
 }
 
-int ULA(int op1, int op2, int ulaOp, int *zero){
+int8_t ULA(int op1, int op2, int ulaOp, int *zero){
     int resultado = 0;
 
     switch(ulaOp){
@@ -651,7 +752,7 @@ void lerMemDados(char *arqMem, int **memDados) {
     fclose(arquivoMemDados);
 }
 
-void escreveMemDados(int *memDados, int endereco, int valor) {
+void escreveMemDados(int *memDados, int8_t endereco, int8_t valor) {
     if (endereco >= 0 && endereco < 256) {
         memDados[endereco] = valor;
     } else {
@@ -659,13 +760,13 @@ void escreveMemDados(int *memDados, int endereco, int valor) {
     }
 }
 
-int retornaMemoria(int *memDados, int enderecoULA) {
+int8_t retornaMemoria(int *memDados, int8_t enderecoULA) {
     return memDados[enderecoULA];
 }
 
 int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
-    int  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, zero = 0, valorSW; // passar para uint8_t aqui e nas funções
-
+    int8_t  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, valorSW;
+    int zero=0;
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
     
     valorSW = operador2;
@@ -838,17 +939,23 @@ void salvaDAT(int *memDados){
 }
 
 void imprimeEstatistica(estatInstrucoes estatInst){
-    printf("_________________________________________\n");
-    printf("       Estatísticas de instruções        \n");
-    printf("_________________________________________\n");
-    printf("  Total de instruções executadas  |  %d  \n", estatInst.total);
-    printf("_________________________________________\n");
-    printf("              Tipo R:             |  %d  \n", estatInst.tipoR);
-    printf("_________________________________________\n");
-    printf("              Tipo I:             |  %d  \n", estatInst.tipoI);
-    printf("_________________________________________\n");
-    printf("              Tipo J:             |  %d  \n", estatInst.tipoJ);
-    printf("_________________________________________\n\n");
+    printf("\n========================================\n");
+    printf("      Estatísticas de instruções\n");
+    printf("========================================\n");
+    printf("Total executadas: %d\n", estatInst.total);
+
+    printf("\nPor classe:\n");
+    printf("Tipo R: %d\n", estatInst.tipoR);
+    printf("Tipo I: %d\n", estatInst.tipoI);
+    printf("Tipo J: %d\n", estatInst.tipoJ);
+
+    printf("\nDetalhamento por instrução:\n");
+    printf("R -> add: %d | sub: %d | and: %d | or: %d\n",
+           estatInst.add, estatInst.sub, estatInst.and, estatInst.or);
+    printf("I -> addi: %d | beq: %d | lw: %d | sw: %d\n",
+           estatInst.addi, estatInst.beq, estatInst.lw, estatInst.sw);
+    printf("J -> j: %d\n", estatInst.j);
+    printf("========================================\n\n");
 }
 
 void salvaEstado(historico *hist, int pc, int *memDados, int *bReg){
