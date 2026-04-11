@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <inttypes.h>
 
 #define MAX_HIST 1000
 
@@ -125,8 +124,8 @@ int8_t ULA(int op1, int op2, int ulaOp, int *zero);
 int *inicializaMemDados();
 int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int **memDados);
-void escreveMemDados(int *memDados, int8_t endereco, int8_t valor);
-int8_t retornaMemoria(int *memDados, int8_t enderecoULA);
+void escreveMemDados(int *memDados, int endereco, int8_t valor);
+int8_t retornaMemoria(int *memDados, uint8_t enderecoULA);
 
 // HISTÓRICO
 void salvaEstado(historico *hist, int pc, int *memDados, int *bReg);
@@ -752,7 +751,7 @@ void lerMemDados(char *arqMem, int **memDados) {
     fclose(arquivoMemDados);
 }
 
-void escreveMemDados(int *memDados, int8_t endereco, int8_t valor) {
+void escreveMemDados(int *memDados, int endereco, int8_t valor) {
     if (endereco >= 0 && endereco < 256) {
         memDados[endereco] = valor;
     } else {
@@ -760,7 +759,7 @@ void escreveMemDados(int *memDados, int8_t endereco, int8_t valor) {
     }
 }
 
-int8_t retornaMemoria(int *memDados, int8_t enderecoULA) {
+int8_t retornaMemoria(int *memDados, uint8_t enderecoULA) {
     return memDados[enderecoULA];
 }
 
@@ -778,14 +777,14 @@ int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *mem
     UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
 
     if((*sinais).EscMem==1){
-        escreveMemDados(memDados, UlaResultado, valorSW);
+        escreveMemDados(memDados, (int)UlaResultado, valorSW);
         printf("\nSW: Valor %d guardado no endereço %d\n", valorSW, UlaResultado);
     }
 
     if((*sinais).MemParaReg==1){
         dadoFinal = UlaResultado;
     }else if((*sinais).EscReg==1){
-        dadoFinal = retornaMemoria(memDados, UlaResultado);
+        dadoFinal = retornaMemoria(memDados, (uint8_t)UlaResultado);
         printf("\nLW: Valor %d lido do endereço %d\n", dadoFinal, UlaResultado);
     }
     
