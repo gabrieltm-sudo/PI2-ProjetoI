@@ -118,7 +118,7 @@ int8_t extensorBit(int8_t imm);
 
 
 // ULA (UNIDADE LÓGICA E ARITMÉTICA)
-int8_t ULA(int op1, int op2, int ulaOp, int *zero);
+int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow);
 
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
@@ -702,16 +702,30 @@ void imprimeBancoRegistradores(int *reg){
     printf("\n");
 }
 
-int8_t ULA(int op1, int op2, int ulaOp, int *zero){
-    int resultado = 0;
+int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow){
+    int resultado = 0; 
+    *overflow = 0;
+    int8_t res8;
 
     switch(ulaOp){
         case 0: // ADD, LW/SW , ADDI
             resultado = op1 + op2;
+            
+                res8 = (int8_t)resultado;
+
+                if(resultado != res8){
+                    *overflow = 1;
+                }
             break;
 
         case 2: // SUB, BEQ
             resultado = op1 - op2;
+                
+                res8 = (int8_t)resultado;
+
+                if(resultado != res8){
+                    *overflow = 1;
+                }
             break;
 
         case 4: // AND
@@ -725,6 +739,11 @@ int8_t ULA(int op1, int op2, int ulaOp, int *zero){
         default:
             printf("\nOperação da ULA inválida!\n");
     }
+
+    if(*overflow == 1){
+    printf("\n OVERFLOW!\n");
+    exit(1);
+}   
 
     // flag zero
     if(resultado == 0){
@@ -777,7 +796,7 @@ int8_t retornaMemoria(int *memDados, uint8_t enderecoULA) {
 
 int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *memDados){
     int8_t  operador1, operador2, UlaResultado=0, regDst, dadoFinal=0, valorSW;
-    int zero=0;
+    int zero=0, overflow = 0;
     lerRegistradores(bReg, (*instrucao).rs, (*instrucao).rt, &operador1, &operador2);
     
     valorSW = operador2;
@@ -786,7 +805,7 @@ int executaInstrucao(instrucao* instrucao, sinaisUC *sinais, int *bReg, int *mem
         operador2=(*instrucao).imm; 
     }
 
-    UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero);
+    UlaResultado = ULA(operador1, operador2, (*sinais).ulaOp, &zero, &overflow);
 
     if((*sinais).EscMem==1){
         escreveMemDados(memDados, (int)UlaResultado, valorSW);
