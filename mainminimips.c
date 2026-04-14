@@ -705,15 +705,15 @@ void imprimeBancoRegistradores(int *reg){
 int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow){
     int resultado = 0; 
     *overflow = 0;
-    int8_t res8;
+    int8_t res_8bit;
 
     switch(ulaOp){
         case 0: // ADD, LW/SW , ADDI
             resultado = op1 + op2;
             
-                res8 = (int8_t)resultado;
+                res_8bit = (int8_t)resultado;
 
-                if(resultado != res8){
+                if(resultado != res_8bit){
                     *overflow = 1;
                 }
             break;
@@ -721,9 +721,9 @@ int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow){
         case 2: // SUB, BEQ
             resultado = op1 - op2;
                 
-                res8 = (int8_t)resultado;
+                res_8bit = (int8_t)resultado;
 
-                if(resultado != res8){
+                if(resultado != res_8bit){
                     *overflow = 1;
                 }
             break;
@@ -739,7 +739,7 @@ int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow){
         default:
             printf("\nOperação da ULA inválida!\n");
     }
-
+    //FECHA SE FOR OVERFLOW
     if(*overflow == 1){
     printf("\n OVERFLOW!\n");
     exit(1);
