@@ -85,8 +85,8 @@ End: 8 bits;
 void imprimeEstatistica(estatInstrucoes estatInst);
 void salvaASM(instrucao *memoria, int linhas);
 void salvaDAT(int *memDados);
-void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
+void run(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
+void step(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst);
 
 // MEMÓRIA
 int contaLinhas(char *arq);
@@ -240,13 +240,13 @@ int main(){
 
             case 8:
                 //Executar programa (run)
-                run(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
+                run(memoria, bReg, &sinais, &pc, memDados, &estatInst);
                 break;
 
             case 9:
                 //Executa instrução (step)
                 salvaEstado(&hist, pc, memDados, bReg);
-                step(memoria, linhas, bReg, &sinais, &pc, memDados, &estatInst);
+                step(memoria, bReg, &sinais, &pc, memDados, &estatInst);
                 break;
 
             case 10:
@@ -330,10 +330,11 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
     for(i=0;i<256;i++){
         if(linhas && fscanf(arquivo, "%16s", mem) != EOF){
             strcpy((*memoria)[i].mem, mem);
+            (*memoria)[i].instrucao = strtoul(mem, NULL, 2);
         } else {
             strcpy((*memoria)[i].mem, "0000000000000000");
+            (*memoria)[i].instrucao = 0;
         }
-        (*memoria)[i].instrucao = strtoul(mem, NULL, 2);
     }
     
     fclose(arquivo);
@@ -389,13 +390,9 @@ int8_t extensorBit(int8_t imm){
 }
 
 // RUN 
-void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
+void run(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
 
-    if(*pc >= linhas){
-        printf("\nFim das instruções!\n");
-        return;
-    }
-    while(*pc < linhas){
+    while(*pc < 256 && memoria[*pc].instrucao!=0){
         
         printf("\nPC = %d | Memória = %s\n", *pc, memoria[*pc].mem);
        
@@ -455,12 +452,25 @@ void run(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, i
 
         (*estatInst).total++;
     }
+
+    if(*pc>=256 || memoria[*pc].instrucao==0){
+        printf("\nFim das instruções!\n");
+        if(memoria[*pc].instrucao==0)
+            printf("\nMotivo: NOP (instrução 0000000000000000)\n");
+        else
+            printf("\nMotivo: Uso total da memória.\n");
+        return;
+    }
 }
 
-void step(instrucao *memoria, int linhas, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
+void step(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDados, estatInstrucoes *estatInst){
 
-    if(*pc >= linhas){
+    if(*pc>=256 || memoria[*pc].instrucao==0){
         printf("\nFim das instruções!\n");
+        if(memoria[*pc].instrucao==0)
+            printf("\nMotivo: NOP (instrução 0000000000000000)\n");
+        else
+            printf("\nMotivo: Uso total da memória.\n");
         return;
     }
 
@@ -529,18 +539,20 @@ void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero){
     // JUMP
     if((*sinais).jump == 1){
         *pc = (*instrucao).addr;
+        printf("\nPC atual: %d.\n", *pc);
         return;
     }
 
     // BRANCH 
     if((*sinais).branch == 1 && zero == 1){
         *pc = *pc + (*instrucao).imm + 1;
+        printf("\nPC atual: %d.\n", *pc);
         return;
     }
 
     // execução normal
     (*pc)++;
-    printf("\n[ PC+1 ]\nPC atual: %d!\n", *pc);
+    printf("\n[ PC+1 ]\nPC atual: %d.\n", *pc);
 }
 // Decodificação
 void decodificaInst(instrucao *instrucao){
@@ -992,5 +1004,5 @@ void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg){
         bReg[i] = e->bReg[i];
 
     printf("\nVoltou uma instrução!\n");
-    printf("PC atual: %d!\n", *pc);
+    printf("PC atual: %d.\n", *pc);
 }
