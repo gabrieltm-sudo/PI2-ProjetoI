@@ -93,6 +93,8 @@ void step(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDado
 int contaLinhas(char *arq);
 void lerMem(char *arq, instrucao **memoria, int linhas);
 void imprimeMemorias(instrucao *memoria, int *memDados);
+void imprimeInstrucao(instrucao *memoria, int pc);
+void decodifica(instrucao *instrucao);
 
 // PROGRAM COUNTER (PC) / BUSCA
 void programCounter(int *pc, sinaisUC *sinais, instrucao *instrucao, int zero);
@@ -350,16 +352,24 @@ void imprimeMemorias(instrucao *memoria, int *memDados){
 
         switch(opt){
             case 1:
-	        x = 35;
+	            x = 70;
 
                 printf("\n%*sMemória de Instruções:\n\n", x, "");
             
                 for (int linha = 0; linha < 64; linha++) {
-                    printf("%3d: %16s\t %3d: %16s\t %3d: %16s\t %3d: %16s\n",
-                           linha, memoria[linha],
-                           linha + 64, memoria[linha + 64].mem,
-                           linha + 128, memoria[linha + 128].mem,
-                           linha + 192, memoria[linha + 192].mem);
+                    printf(" %3d: %16s: ", linha, memoria[linha].mem);
+                    imprimeInstrucao(memoria, linha);
+
+                    printf("\t %3d: %16s: ", linha + 64, memoria[linha + 64].mem);
+                    imprimeInstrucao(memoria, linha + 64);
+
+                    printf("\t %3d: %16s: ", linha + 128, memoria[linha + 128].mem);
+                    imprimeInstrucao(memoria, linha + 128);
+
+                    printf("\t %3d: %16s: ", linha + 192, memoria[linha + 192].mem);
+                    imprimeInstrucao(memoria, linha + 192);
+
+                    printf("\n");
                 }
                 printf("\n");
                 break;
@@ -1035,4 +1045,81 @@ void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg, estatIns
 
     printf("\nVoltou uma instrução!\n");
     printf("PC atual: %d.\n", *pc);
+}
+
+void imprimeInstrucao(instrucao *memoria, int pc) {
+    if((memoria)[pc].decodificado==0){
+        decodifica(&memoria[pc]);
+    }
+
+    switch(memoria[pc].opcode){
+        case 0: // opcode = 0000
+
+            if(memoria[pc].funct==0){
+                printf("add $%d, $%d, $%d", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+            }
+            else if((memoria)[pc].funct==2){
+                printf("sub $%d, $%d, $%d", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+            }
+            else if((memoria)[pc].funct==4){
+                printf("and $%d, $%d, $%d", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+            }
+            else if((memoria)[pc].funct==5){
+                printf("or $%d, $%d, $%d", (memoria)[pc].rd, (memoria)[pc].rs, (memoria)[pc].rt);
+            }
+            break;
+        
+        case 2: // opcode = 0010 - J
+            int x=12;
+            printf("j %d%*s", (memoria)[pc].addr, x, "");
+
+            break;
+
+        case 4: // opcode = 0100 - Addi
+            printf("addi $%d, $%d, %d", (memoria)[pc].rt, (memoria)[pc].rs, (memoria)[pc].imm);
+
+            break;
+
+        case 8: // opcode = 1000 - BEQ
+            printf("beq $%d, $%d, %d", (memoria)[pc].rs, (memoria)[pc].rt, (memoria)[pc].imm);
+
+            break;
+
+        case 11: // opcode = 1011 - lw
+            printf("lw $%d, %d($%d)", (memoria)[pc].rt, (memoria)[pc].imm, (memoria)[pc].rs);
+
+            break;
+
+        case 15: // opcode = 1111 - sw
+            printf("sw $%d, %d($%d)", (memoria)[pc].rt, (memoria)[pc].imm, (memoria)[pc].rs);
+
+            break;
+    }
+}
+
+void decodifica(instrucao *instrucao){
+
+    (*instrucao).opcode = (*instrucao).instrucao >> 12; // Pega os 4 bits do opcode
+
+    switch((*instrucao).opcode){
+    case 0:
+        (*instrucao).tipoInst = tipoR;
+        (*instrucao).rs = ((*instrucao).instrucao >> 9) & 0x7; // pega os 3 bits do rs (desloca 6 bits para a direita e pega os 3 mais significativos que ficaram)
+        (*instrucao).rt = ((*instrucao).instrucao >> 6) & 0x7; // pega os 3 bits do rt
+        (*instrucao).rd = ((*instrucao).instrucao >> 3) & 0x7; // pega os 3 bits do rd
+        (*instrucao).funct = ((*instrucao).instrucao) & 0x7;
+        break;
+
+    case 2:
+        (*instrucao).tipoInst = tipoJ;
+        (*instrucao).addr = ((*instrucao).instrucao) &0xFF; // pega os 8 bits do adress
+        break;
+
+    default:
+        (*instrucao).tipoInst = tipoI;
+        (*instrucao).rs = ((*instrucao).instrucao >> 9) &0x7; // pega os 3 bits do rs
+        (*instrucao).rt = ((*instrucao).instrucao >> 6) &0x7; // pega os 3 bits do rt
+        (*instrucao).imm = ((*instrucao).instrucao) &0x3F; // pega os 6 bits do imediato (deve passar por um extensor antes da ULA)
+        (*instrucao).imm = extensorBit((*instrucao).imm);
+    }
 }
