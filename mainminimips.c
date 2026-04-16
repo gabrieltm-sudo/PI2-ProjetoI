@@ -53,6 +53,7 @@ typedef struct {
     int pc;
     int memDados[256];
     int bReg[8];
+    estatInstrucoes estat;
 } estado;
 
 typedef struct {
@@ -128,8 +129,8 @@ void escreveMemDados(int *memDados, int endereco, int8_t valor);
 int8_t retornaMemoria(int *memDados, uint8_t enderecoULA);
 
 // HISTÓRICO
-void salvaEstado(historico *hist, int pc, int *memDados, int *bReg);
-void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg);
+void salvaEstado(historico *hist, int pc, int *memDados, int *bReg, estatInstrucoes *estatInst);
+void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg, estatInstrucoes *estatInst);
 
 //----------------------------------------------------------------------
 
@@ -245,13 +246,13 @@ int main(){
 
             case 9:
                 //Executa instrução (step)
-                salvaEstado(&hist, pc, memDados, bReg);
+                salvaEstado(&hist, pc, memDados, bReg, &estatInst);
                 step(memoria, bReg, &sinais, &pc, memDados, &estatInst);
                 break;
 
             case 10:
                 //Voltar instrução (back)
-                voltaInstrucao(&hist, &pc, memDados, bReg);
+                voltaInstrucao(&hist, &pc, memDados, bReg, &estatInst);
                 break;
 
             case 0:
@@ -341,7 +342,7 @@ void lerMem(char *arq, instrucao **memoria, int linhas){
 }
 
 void imprimeMemorias(instrucao *memoria, int *memDados){
-    int opt;
+    int opt, x;
     do{
         printf("\n1. Memória de instruções\n2. Memória de dados\n");
         printf("\nSelecione uma das opções acima: ");
@@ -349,34 +350,37 @@ void imprimeMemorias(instrucao *memoria, int *memDados){
 
         switch(opt){
             case 1:
-                printf("_________________________\n");
-                printf(" Posição  |  Instruções  \n");
-                printf("__________|______________\n");
-                printf("\n\n");
+            x = 35;
+
+                printf("\n%*sMemória de Instruções:\n\n", x, "");
+            
+                for (int linha = 0; linha < 64; linha++) {
+                    printf("%3d: %16s\t %3d: %16s\t %3d: %16s\t %3d: %16s\n",
+                           linha, memoria[linha],
+                           linha + 64, memoria[linha + 64].mem,
+                           linha + 128, memoria[linha + 128].mem,
+                           linha + 192, memoria[linha + 192].mem);
+                }
+                printf("\n");
                 break;
             case 2:
-                printf("_________________________\n");
-                printf(" Posição  |  Instruções  \n");
-                printf("__________|______________\n");
-                printf("\n\n");
+                x = 7;
+
+                printf("\n%*sMemória de Dados:\n\n", x, "");
+            
+                for (int linha = 0; linha < 64; linha++) {
+                    printf("%3d: %d\t %3d: %d\t %3d: %d\t %3d: %d\n",
+                           linha, memDados[linha],
+                           linha + 64, memDados[linha + 64],
+                           linha + 128, memDados[linha + 128],
+                           linha + 192, memDados[linha + 192]);
+                }
+                printf("\n");
                 break;
             default:
                 printf("Opção inválida! Por favor, selecione uma das opções disponíveis.\n");
         }
     }while(opt<1 || opt>2);
-
-    printf("________________________________________\n");
-    printf(" Posição  |    Instruções    |   Dados    \n");
-    printf("__________|__________________|__________\n");
-    for(int i=0;i<256;i++){
-        if(memDados[i]<0){
-            printf("   %.3d    | %.16s |     %d   \n",i, memoria[i].mem,memDados[i]);
-        } else {
-            printf("   %.3d    | %.16s |     %d    \n",i, memoria[i].mem,memDados[i]);
-        }
-        printf("__________|__________________|__________\n");
-    }
-    printf("\n");
 }
 
 int8_t extensorBit(int8_t imm){
@@ -988,7 +992,7 @@ void imprimeEstatistica(estatInstrucoes estatInst){
     printf("========================================\n\n");
 }
 
-void salvaEstado(historico *hist, int pc, int *memDados, int *bReg){
+void salvaEstado(historico *hist, int pc, int *memDados, int *bReg, estatInstrucoes *estatInst){
     if(hist->topo >= MAX_HIST) return;
 
     estado *e = &hist->estados[hist->topo];
@@ -1001,10 +1005,12 @@ void salvaEstado(historico *hist, int pc, int *memDados, int *bReg){
     for(int i=0;i<8;i++)
         e->bReg[i] = bReg[i];
 
+    e->estat = *estatInst; // <-- SALVA ESTATÍSTICAS
+
     hist->topo++;
 }
 
-void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg){
+void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg, estatInstrucoes *estatInst){
     if(hist->topo <= 0){
         printf("\nSem histórico!\n");
         return;
@@ -1021,6 +1027,8 @@ void voltaInstrucao(historico *hist, int *pc, int *memDados, int *bReg){
 
     for(int i=0;i<8;i++)
         bReg[i] = e->bReg[i];
+
+    *estatInst = e->estat; // <-- RESTAURA ESTATÍSTICAS
 
     printf("\nVoltou uma instrução!\n");
     printf("PC atual: %d.\n", *pc);
