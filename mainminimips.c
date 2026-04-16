@@ -350,8 +350,7 @@ void imprimeMemorias(instrucao *memoria, int *memDados){
 
         switch(opt){
             case 1:
-<<<<<<< HEAD
-            x = 35;
+	        x = 35;
 
                 printf("\n%*sMemória de Instruções:\n\n", x, "");
             
@@ -361,46 +360,26 @@ void imprimeMemorias(instrucao *memoria, int *memDados){
                            linha + 64, memoria[linha + 64].mem,
                            linha + 128, memoria[linha + 128].mem,
                            linha + 192, memoria[linha + 192].mem);
-=======
-                printf("_________________________________________________________________________________________\n");
-                printf(" Posição | %-12s | Posição | %-12s | Posição | %-12s | Posição | %-12s\n",
-                       "0 a 63", "64 a 127", "128 a 191", "192 a 255");
-                printf("_________|______________|_________|______________|_________|______________|_________|______________\n\n");
-            
-                for (int linha = 0; linha < 64; linha++) {
-                    printf("%3d: %3d\t %3d: %3d\t %3d: %3d\t %3d: %3d\n",
-                           linha, memoria[linha],
-                           linha + 64, memoria[linha + 64],
-                           linha + 128, memoria[linha + 128],
-                           linha + 192, memoria[linha + 192]);
->>>>>>> 922bb09bf0a8e8f2e558455628c16833fc4014a3
                 }
                 printf("\n");
                 break;
+
             case 2:
-<<<<<<< HEAD
-                x = 7;
+
+                x = 20;
 
                 printf("\n%*sMemória de Dados:\n\n", x, "");
-            
-                for (int linha = 0; linha < 64; linha++) {
-                    printf("%3d: %d\t %3d: %d\t %3d: %d\t %3d: %d\n",
-=======
-                printf("_________________________________________________________________________________________\n");
-                printf(" Posição | %-12s | Posição | %-12s | Posição | %-12s | Posição | %-12s\n",
-                       "0 a 63", "64 a 127", "128 a 191", "192 a 255");
-                printf("_________|______________|_________|______________|_________|______________|_________|______________\n\n");
-            
+                    
                 for (int linha = 0; linha < 64; linha++) {
                     printf("%3d: %3d\t %3d: %3d\t %3d: %3d\t %3d: %3d\n",
->>>>>>> 922bb09bf0a8e8f2e558455628c16833fc4014a3
-                           linha, memDados[linha],
-                           linha + 64, memDados[linha + 64],
-                           linha + 128, memDados[linha + 128],
-                           linha + 192, memDados[linha + 192]);
+                    linha, memDados[linha],
+                    linha + 64, memDados[linha + 64],
+                    linha + 128, memDados[linha + 128],
+                    linha + 192, memDados[linha + 192]);
                 }
                 printf("\n");
                 break;
+
             default:
                 printf("Opção inválida! Por favor, selecione uma das opções disponíveis.\n");
         }
