@@ -125,7 +125,6 @@ int8_t ULA(int op1, int op2, int ulaOp, int *zero, int *overflow);
 
 // MEMÓRIA DE DADOS
 int *inicializaMemDados();
-int contaMemDados(char *arqMem);
 void lerMemDados(char *arqMem, int **memDados);
 void escreveMemDados(int *memDados, int endereco, int8_t valor);
 int8_t retornaMemoria(int *memDados, uint8_t enderecoULA);
@@ -291,26 +290,6 @@ int contaLinhas(char *arq){
     }
 
     fclose(arquivo);
-    return count;
-}
-
-int contaMemDados(char *arqMem){
-    arquivoMemDados = fopen(arqMem, "r");
-    char ch;
-    int count=0;
-
-    if(arquivoMemDados==NULL){
-        printf("\nAcesso negado!\n");
-        return 0;
-    }
-
-    while((ch=fgetc(arquivoMemDados))!=EOF){
-        if(ch=='\n'){
-            count++;
-        }
-    }
-
-    fclose(arquivoMemDados);
     return count;
 }
 
