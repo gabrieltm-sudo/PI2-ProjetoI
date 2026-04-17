@@ -452,7 +452,7 @@ void run(instrucao *memoria, int *bReg, sinaisUC *sinais, int *pc, int *memDados
     if(*pc>=256 || memoria[*pc].instrucao==0){
         printf("\nFim das instruções!\n");
         if(memoria[*pc].instrucao==0)
-            printf("\nMotivo: NOP (instrução 0000000000000000)\n");
+            printf("\nMotivo: HALT (instrução 0000000000000000)\n");
         else
             printf("\nMotivo: Uso total da memória.\n");
         return;
@@ -970,7 +970,7 @@ void imprimeEstatistica(estatInstrucoes estatInst){
     printf("========================================\n");
     printf("Total executadas: %d\n", estatInst.total);
 
-    printf("\nPor classe:\n");
+    printf("\nPor tipo:\n");
     printf("Tipo R: %d\n", estatInst.tipoR);
     printf("Tipo I: %d\n", estatInst.tipoI);
     printf("Tipo J: %d\n", estatInst.tipoJ);
