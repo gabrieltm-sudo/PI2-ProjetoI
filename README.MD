@@ -1,6 +1,6 @@
 # Projeto Integrador II - Projeto I
 
-Simulador de uma arquitetura MiniMIPS de 16 bits, implementado em C, com execução interativa por menu e suporte a operações de carga/armazenamento, instruções aritméticas/lógicas e controle de fluxo.
+Simulador de uma arquitetura MiniMIPS de 8 bits, implementado em C, com execução interativa por menu e suporte a operações de carga/armazenamento, instruções aritméticas/lógicas e controle de fluxo.
 
 ## Autores
 
